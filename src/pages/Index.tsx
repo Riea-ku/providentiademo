@@ -1,71 +1,58 @@
-import { Header } from '@/components/dashboard/Header';
-import { QuickStats } from '@/components/dashboard/QuickStats';
-import { SystemStatus } from '@/components/dashboard/SystemStatus';
-import { PredictionPanel } from '@/components/prediction/PredictionPanel';
-import { EquipmentOverview } from '@/components/dashboard/EquipmentOverview';
-import { RecentActivity } from '@/components/dashboard/RecentActivity';
-import { EquipmentHealthChart } from '@/components/charts/EquipmentHealthChart';
-import { PredictionTrendChart } from '@/components/charts/PredictionTrend';
+import React, { useState } from 'react';
 import { Sidebar } from '@/components/Sidebar';
+import { Header } from '@/components/dashboard/Header';
+import { EnterpriseDashboard } from '@/components/dashboard/EnterpriseDashboard';
+import { AgriChatbot } from '@/components/chat/AgriChatbot';
+import { MessageSquare, LayoutDashboard } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
+  const [activeView, setActiveView] = useState<'dashboard' | 'chat'>('chat');
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      
-      <main className="flex-1 overflow-x-hidden">
-        <Header alertCount={6} />
+      <main className="flex-1 ml-16 md:ml-64">
+        <Header />
         
-        <div className="container py-6 px-4 md:px-8 space-y-6">
-          {/* Hero Section */}
-          <div className="text-center mb-8 animate-fade-in">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3">
-              <span className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">
-                AgriProvidentia
-              </span>
-            </h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Royal Agricultural Intelligence • Predictive Maintenance Sovereignty • Elite Equipment Oversight
-            </p>
+        {/* View Toggle */}
+        <div className="px-6 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={activeView === 'chat' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveView('chat')}
+              className="gap-2"
+            >
+              <MessageSquare className="w-4 h-4" />
+              AI Assistant
+            </Button>
+            <Button
+              variant={activeView === 'dashboard' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveView('dashboard')}
+              className="gap-2"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              Dashboard
+            </Button>
           </div>
-          
-          {/* Stats Row */}
-          <QuickStats />
-          
-          {/* System Status */}
-          <SystemStatus />
-          
-          {/* Prediction Panel */}
-          <section className="animate-fade-in" style={{ animationDelay: '200ms' }}>
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-              Equipment Prediction
-            </h2>
-            <PredictionPanel />
-          </section>
-          
-          {/* Charts and Equipment Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in" style={{ animationDelay: '300ms' }}>
-            <div className="lg:col-span-2 space-y-6">
-              <PredictionTrendChart />
-              <EquipmentOverview />
-            </div>
-            <div className="space-y-6">
-              <EquipmentHealthChart />
-              <RecentActivity />
-            </div>
-          </div>
-          
-          {/* Footer */}
-          <footer className="pt-8 pb-4 text-center text-sm text-muted-foreground border-t border-border/30">
-            <p>
-              © 2024 AgriProvidentia Enterprise • Predictive Maintenance AI System
-            </p>
-            <p className="mt-1 text-xs">
-              Powered by Machine Learning • Real-time Sensor Analytics • Smart Agriculture
-            </p>
-          </footer>
         </div>
+
+        <div className="p-6">
+          {activeView === 'chat' ? (
+            <div className="h-[calc(100vh-200px)]">
+              <AgriChatbot />
+            </div>
+          ) : (
+            <EnterpriseDashboard />
+          )}
+        </div>
+
+        {/* Footer */}
+        <footer className="px-6 py-4 border-t border-border text-center text-xs text-muted-foreground">
+          © 2026 AgriProvidentia Technologies • Providentia Enterprise Platform v3.0
+        </footer>
       </main>
     </div>
   );
