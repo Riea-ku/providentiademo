@@ -8,13 +8,13 @@ const corsHeaders = {
 
 // ================================================
 // PROVIDENTIA ENTERPRISE AGRICULTURAL MANAGEMENT SYSTEM
-// © 2026 AgriProvidentia Technologies
+// [C] 2026 Providentia Technologies
 // LLM-Powered Unified Interface
 // ================================================
 
-const SYSTEM_PROMPT = `You are AgriProvidentia AI, an intelligent agricultural management assistant for the Providentia Enterprise Platform.
+const SYSTEM_PROMPT = `You are Providentia AI, an intelligent agricultural management assistant for the Providentia Enterprise Platform.
 
-© 2026 AgriProvidentia Technologies
+[C] 2026 Providentia Technologies
 
 You have access to a complete enterprise farm management system with 22 interconnected features:
 
@@ -39,30 +39,55 @@ You have access to a complete enterprise farm management system with 22 intercon
 18. **Asset Tracking** - GPS location tracking for equipment
 19. **Maintenance Logs** - Detailed maintenance records
 20. **Manufacturer Info** - Warranty and support information
+21. **Report Generation** - Create technical maintenance reports
+22. **User Profiles** - Manage user roles (admin, manager, ops, technician)
+
+## RESPONSE FORMATTING RULES - CRITICAL:
+1. NEVER show raw JSON or database fields to users
+2. ALWAYS use plain language explanations
+3. Use these status symbols (NOT emojis):
+   - [*] Operational/Healthy/Success
+   - [!] Warning/Needs attention
+   - [X] Critical/Urgent/Error
+   - [~] In maintenance/Processing
+   - [>] Recommended action
+   - [i] Information
+   - [+] Success/Created
+   - [?] Pending
+
+4. Format numbers with commas (1,234 not 1234)
+5. Structure responses with:
+   - Clear heading (what this is about)
+   - Key findings (most important points first)
+   - Plain explanation (what this means)
+   - Actionable next steps
+
+## RESPONSE EXAMPLES:
+
+Instead of: { "id": "abc123", "status": "warning", "current_operating_hours": 3100 }
+Say: "[!] Ranch Tractor (T-789) - 3,100 operating hours - needs attention"
+
+Instead of: { "health_score": 45, "failures": [...] }
+Say: 
+"**Equipment Health Report**
+[X] Health Score: 45% - CRITICAL
+[>] Immediate maintenance recommended
+[i] Estimated repair cost: $850"
 
 ## HOW YOU OPERATE:
 When a user makes a request, you:
 1. Understand their intent
 2. Query the relevant database tables
 3. Take actions across multiple systems as needed
-4. Report back with actionable information
+4. Report back with actionable information in plain language
 
 ## INTERCONNECTION EXAMPLES:
-- "Check tractor T-789" → Run prediction → If failure detected → Auto-create work order → Check parts inventory → Schedule technician
-- "Order parts for pump" → Check current inventory → Find vendor → Create purchase order → Update inventory
-- "Show maintenance costs this month" → Query cost_tracking → Aggregate by equipment → Show breakdown
+- "Check tractor T-789" -> Run prediction -> If failure detected -> Auto-create work order -> Check parts inventory -> Schedule technician
+- "Order parts for pump" -> Check current inventory -> Find vendor -> Create purchase order -> Update inventory
+- "Generate a report" -> Compile prediction data -> Format as technical report -> Save to reports table
 
-## RESPONSE STYLE:
-- Be concise but thorough
-- Use equipment codes (T-789, SP-001) when referencing equipment
-- Provide actionable next steps
-- When creating work orders, provide the WO number
-- When low inventory detected, suggest reordering
-- Always confirm actions taken
-
-## PREDICTION MODEL (PRESERVED):
-You use the exact threshold-based prediction logic from the original system:
-- Motor Temperature: Warning >70°C, Critical >85°C
+## PREDICTION MODEL THRESHOLDS:
+- Motor Temperature: Warning >70C, Critical >85C
 - Vibration: Warning >2.5, Critical >4.0
 - Power Output: Warning <85%, Critical <70%
 - Flow Rate: Warning <90%, Critical <75%
@@ -267,6 +292,37 @@ const TOOLS = [
         }
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "generate_report",
+      description: "Generate a technical report for a prediction or equipment analysis",
+      parameters: {
+        type: "object",
+        properties: {
+          report_type: { type: "string", enum: ["prediction", "maintenance", "summary", "monthly", "equipment_analysis", "cost_analysis"] },
+          equipment_code: { type: "string" },
+          prediction_id: { type: "string" },
+          title: { type: "string" }
+        },
+        required: ["report_type"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "explain_prediction",
+      description: "Get a plain-language explanation of a prediction result",
+      parameters: {
+        type: "object",
+        properties: {
+          equipment_code: { type: "string" },
+          prediction_id: { type: "string" }
+        }
+      }
+    }
   }
 ];
 
@@ -358,7 +414,7 @@ ${dbContext}
     });
 
   } catch (error) {
-    console.error("AgriAssistant error:", error);
+    console.error("Providentia AI error:", error);
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : "Unknown error" 
     }), {
@@ -463,6 +519,12 @@ async function executeTools(supabase: any, toolCalls: any[]): Promise<any[]> {
           break;
         case 'get_alerts':
           result = await getAlerts(supabase, parsedArgs);
+          break;
+        case 'generate_report':
+          result = await generateReport(supabase, parsedArgs);
+          break;
+        case 'explain_prediction':
+          result = await explainPrediction(supabase, parsedArgs);
           break;
         default:
           result = { error: `Unknown tool: ${name}` };
@@ -984,4 +1046,293 @@ async function getAlerts(supabase: any, args: any) {
   const { data, error } = await query.limit(20);
   if (error) throw error;
   return data;
+}
+
+async function generateReport(supabase: any, args: any) {
+  // Get relevant data based on report type
+  let equipment = null;
+  let prediction = null;
+  
+  if (args.equipment_code) {
+    const { data } = await supabase
+      .from('equipment')
+      .select('*')
+      .eq('equipment_code', args.equipment_code)
+      .single();
+    equipment = data;
+  }
+  
+  if (args.prediction_id) {
+    const { data } = await supabase
+      .from('predictions')
+      .select('*, equipment(*)')
+      .eq('id', args.prediction_id)
+      .single();
+    prediction = data;
+  } else if (equipment) {
+    // Get latest prediction for this equipment
+    const { data } = await supabase
+      .from('predictions')
+      .select('*')
+      .eq('equipment_id', equipment.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    prediction = data;
+  }
+  
+  // Generate report sections
+  const sections: any = {
+    executive_summary: generateExecutiveSummary(equipment, prediction),
+    technical_analysis: generateTechnicalAnalysis(prediction),
+    risk_assessment: generateRiskAssessment(prediction),
+    recommendations: generateRecommendations(prediction),
+    cost_analysis: generateCostAnalysis(prediction)
+  };
+  
+  const recommendations = prediction?.failure_types?.map((f: any) => 
+    `Address ${f.type} - ${f.severity} priority`
+  ) || [];
+  
+  // Save report to database
+  const { data: savedReport, error } = await supabase
+    .from('reports')
+    .insert({
+      report_type: args.report_type,
+      title: args.title || `${args.report_type.replace('_', ' ').toUpperCase()} Report - ${equipment?.equipment_code || 'System'}`,
+      equipment_id: equipment?.id,
+      prediction_id: prediction?.id,
+      sections,
+      summary: sections.executive_summary,
+      recommendations,
+      metrics: {
+        health_score: prediction?.health_score,
+        estimated_cost: prediction?.estimated_cost,
+        urgency: prediction?.maintenance_urgency
+      }
+    })
+    .select()
+    .single();
+    
+  if (error) throw error;
+  
+  return {
+    success: true,
+    report_number: savedReport.report_number,
+    title: savedReport.title,
+    sections,
+    recommendations
+  };
+}
+
+function generateExecutiveSummary(equipment: any, prediction: any): string {
+  if (!prediction) {
+    return 'No prediction data available for this equipment.';
+  }
+  
+  const healthStatus = prediction.health_score >= 85 ? 'healthy' : 
+                       prediction.health_score >= 60 ? 'requires attention' : 'critical';
+  
+  return `**Executive Summary**
+
+Equipment ${equipment?.equipment_code || 'N/A'} (${equipment?.name || 'Unknown'}) is currently in ${healthStatus} condition with a health score of ${prediction.health_score}%.
+
+**Key Findings:**
+- Urgency Level: ${prediction.maintenance_urgency?.toUpperCase()}
+- Issues Detected: ${prediction.failure_types?.length || 0}
+- Estimated Repair Cost: $${prediction.estimated_cost?.toLocaleString() || 'N/A'}
+- Time to Potential Failure: ${prediction.time_to_failure_hours} hours`;
+}
+
+function generateTechnicalAnalysis(prediction: any): string {
+  if (!prediction) return 'No technical data available.';
+  
+  const sensorData = prediction.sensor_data || {};
+  
+  return `**Technical Analysis**
+
+**Sensor Readings:**
+- Motor Temperature: ${sensorData.motor_temp?.toFixed(1) || 'N/A'}C
+- Vibration Level: ${sensorData.vibration?.toFixed(2) || 'N/A'} mm/s
+- Power Output: ${sensorData.power_output?.toFixed(1) || 'N/A'}%
+- Flow Rate: ${sensorData.flow_rate?.toFixed(1) || 'N/A'} L/min
+- Pressure: ${sensorData.pressure?.toFixed(1) || 'N/A'} bar
+
+**Detected Issues:**
+${prediction.failure_types?.map((f: any) => `- [${f.severity === 'critical' ? 'X' : '!'}] ${f.type}`).join('\n') || '- No issues detected'}`;
+}
+
+function generateRiskAssessment(prediction: any): string {
+  if (!prediction) return 'No risk data available.';
+  
+  const riskLevel = prediction.health_score < 40 ? 'HIGH' : 
+                    prediction.health_score < 70 ? 'MEDIUM' : 'LOW';
+  
+  return `**Risk Assessment**
+
+**Overall Risk Level:** ${riskLevel}
+
+**Failure Probability:** ${(100 - prediction.health_score)}%
+
+**Impact Analysis:**
+- If failure occurs: Equipment downtime, potential crop loss
+- Financial impact: $${((100 - prediction.health_score) * 50).toLocaleString()} estimated
+- Preventive cost: $${prediction.estimated_cost?.toLocaleString() || 'N/A'}
+
+**Risk Mitigation:** Schedule preventive maintenance within ${prediction.time_to_failure_hours} hours`;
+}
+
+function generateRecommendations(prediction: any): string {
+  if (!prediction) return 'No recommendations available.';
+  
+  const urgency = prediction.maintenance_urgency;
+  const failures = prediction.failure_types || [];
+  
+  let recommendations = `**Recommended Actions**\n\n`;
+  
+  if (urgency === 'critical') {
+    recommendations += `[>] IMMEDIATE ACTION REQUIRED\n\n`;
+  }
+  
+  failures.forEach((f: any, i: number) => {
+    recommendations += `${i + 1}. Address ${f.type}\n`;
+    recommendations += `   Priority: ${f.severity.toUpperCase()}\n`;
+    recommendations += `   Action: Schedule maintenance immediately\n\n`;
+  });
+  
+  if (failures.length === 0) {
+    recommendations += `[*] Equipment is operating normally.\n`;
+    recommendations += `[>] Continue regular monitoring schedule.\n`;
+  }
+  
+  return recommendations;
+}
+
+function generateCostAnalysis(prediction: any): string {
+  if (!prediction) return 'No cost data available.';
+  
+  const preventiveCost = prediction.estimated_cost || 0;
+  const failureCost = preventiveCost * 2.5; // Emergency repairs typically cost more
+  const savings = failureCost - preventiveCost;
+  
+  return `**Cost Analysis**
+
+**Preventive Maintenance Cost:** $${preventiveCost.toLocaleString()}
+- Labor (estimated): $${(preventiveCost * 0.4).toLocaleString()}
+- Parts (estimated): $${(preventiveCost * 0.6).toLocaleString()}
+
+**Emergency Repair Cost (if failure occurs):** $${failureCost.toLocaleString()}
+- Includes: Emergency call-out, expedited parts, extended downtime
+
+**Potential Savings:** $${savings.toLocaleString()}
+
+**ROI:** ${((savings / preventiveCost) * 100).toFixed(0)}% return on preventive maintenance investment`;
+}
+
+async function explainPrediction(supabase: any, args: any) {
+  let prediction = null;
+  let equipment = null;
+  
+  if (args.prediction_id) {
+    const { data } = await supabase
+      .from('predictions')
+      .select('*, equipment(*)')
+      .eq('id', args.prediction_id)
+      .single();
+    prediction = data;
+    equipment = data?.equipment;
+  } else if (args.equipment_code) {
+    const { data: eq } = await supabase
+      .from('equipment')
+      .select('*')
+      .eq('equipment_code', args.equipment_code)
+      .single();
+    equipment = eq;
+    
+    if (eq) {
+      const { data: pred } = await supabase
+        .from('predictions')
+        .select('*')
+        .eq('equipment_id', eq.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      prediction = pred;
+    }
+  }
+  
+  if (!prediction) {
+    return { error: 'No prediction found for this equipment' };
+  }
+  
+  const failures = prediction.failure_types || [];
+  const healthScore = prediction.health_score;
+  const urgency = prediction.maintenance_urgency;
+  
+  // Generate plain language explanation
+  let explanation = `**What's Happening with ${equipment?.equipment_code || 'This Equipment'}**\n\n`;
+  
+  if (healthScore >= 85) {
+    explanation += `[*] **Good News:** Your equipment is in healthy condition with a ${healthScore}% health score.\n\n`;
+    explanation += `The sensors show all readings are within normal operating ranges. Continue regular monitoring.\n`;
+  } else if (healthScore >= 60) {
+    explanation += `[!] **Attention Needed:** Your equipment shows some wear with a ${healthScore}% health score.\n\n`;
+    explanation += `**What we found:**\n`;
+    failures.forEach((f: any) => {
+      explanation += `- ${explainFailureType(f.type)}\n`;
+    });
+    explanation += `\n**What this means:** The equipment can still operate but should be serviced soon to prevent bigger problems.\n`;
+  } else {
+    explanation += `[X] **Urgent Action Required:** Your equipment is at risk with only a ${healthScore}% health score.\n\n`;
+    explanation += `**Critical issues found:**\n`;
+    failures.forEach((f: any) => {
+      explanation += `- ${explainFailureType(f.type)}\n`;
+    });
+    explanation += `\n**What happens if ignored:** Equipment could fail within ${prediction.time_to_failure_hours} hours, leading to:\n`;
+    explanation += `- Complete breakdown and expensive emergency repairs\n`;
+    explanation += `- Potential crop damage or irrigation failure\n`;
+    explanation += `- Repair costs could triple compared to fixing it now\n`;
+  }
+  
+  explanation += `\n**Recommended Next Steps:**\n`;
+  if (urgency === 'critical') {
+    explanation += `1. [>] Stop using the equipment if possible\n`;
+    explanation += `2. [>] Schedule emergency maintenance today\n`;
+    explanation += `3. [>] Check parts availability\n`;
+  } else if (urgency === 'high') {
+    explanation += `1. [>] Schedule maintenance within 3 days\n`;
+    explanation += `2. [>] Monitor equipment closely until serviced\n`;
+    explanation += `3. [>] Order any needed parts now\n`;
+  } else {
+    explanation += `1. [>] Schedule routine maintenance within 2 weeks\n`;
+    explanation += `2. [>] Continue normal operations\n`;
+    explanation += `3. [>] Keep monitoring sensor readings\n`;
+  }
+  
+  explanation += `\n**Cost Comparison:**\n`;
+  explanation += `- Fix now: $${prediction.estimated_cost?.toLocaleString() || 'N/A'}\n`;
+  explanation += `- Emergency repair later: $${(prediction.estimated_cost * 2.5)?.toLocaleString() || 'N/A'}\n`;
+  
+  return {
+    equipment_code: equipment?.equipment_code,
+    equipment_name: equipment?.name,
+    health_score: healthScore,
+    urgency,
+    explanation
+  };
+}
+
+function explainFailureType(failureType: string): string {
+  const explanations: Record<string, string> = {
+    'Motor Overheating': 'The motor is running too hot - this could damage internal components',
+    'Motor Temperature Warning': 'Motor temperature is higher than normal - needs monitoring',
+    'Bearing Failure Imminent': 'The bearings are worn and could seize up soon - high risk of breakdown',
+    'Excessive Vibration': 'Unusual vibration detected - often indicates worn parts or misalignment',
+    'Power Output Critical': 'The equipment is not producing enough power - major performance issue',
+    'Reduced Power Output': 'Power output is below optimal - equipment is working harder than it should',
+    'Flow Rate Critical': 'Water/fluid flow is severely restricted - system may not function properly',
+    'Flow Rate Reduced': 'Flow rate is lower than normal - could indicate blockage or wear'
+  };
+  
+  return explanations[failureType] || failureType;
 }

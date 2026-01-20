@@ -51,7 +51,7 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="px-6 py-4 border-t border-border text-center text-xs text-muted-foreground">
-          © 2026 AgriProvidentia Technologies • Providentia Enterprise Platform v3.0
+          [C] 2026 Providentia Technologies | Providentia Enterprise Platform v3.0
         </footer>
       </main>
     </div>
