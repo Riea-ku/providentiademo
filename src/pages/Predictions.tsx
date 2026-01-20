@@ -13,6 +13,15 @@ const recentPredictions = [
   { id: 5, equipment: 'Drip System', status: 'HEALTHY', confidence: 89, time: '2 hrs ago' },
 ];
 
+const getStatusSymbol = (status: string) => {
+  switch (status) {
+    case 'HEALTHY': return '[*]';
+    case 'WARNING': return '[!]';
+    case 'FAILURE': return '[X]';
+    default: return '[?]';
+  }
+};
+
 const PredictionsPage = () => {
   return (
     <div className="flex min-h-screen bg-background">
@@ -90,7 +99,7 @@ const PredictionsPage = () => {
                           ''
                         }
                       >
-                        {pred.status}
+                        {getStatusSymbol(pred.status)} {pred.status}
                       </Badge>
                     </div>
                   </div>
@@ -99,6 +108,11 @@ const PredictionsPage = () => {
             </CardContent>
           </Card>
         </div>
+        
+        {/* Footer */}
+        <footer className="px-6 py-4 border-t border-border text-center text-xs text-muted-foreground">
+          [C] 2026 Providentia Technologies | Providentia Enterprise Platform v3.0
+        </footer>
       </main>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Trash2, Sparkles, Bot, User } from 'lucide-react';
+import { Send, Loader2, Trash2, Bot, User, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -42,7 +42,7 @@ export function AgriChatbot() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-card rounded-xl border border-border overflow-hidden">
+    <div className="flex flex-col h-full bg-card rounded-xl border border-border overflow-hidden max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
         <div className="flex items-center gap-3">
@@ -50,7 +50,7 @@ export function AgriChatbot() {
             <Bot className="w-5 h-5 text-primary-foreground" />
           </div>
           <div>
-            <h2 className="font-semibold text-foreground">AgriProvidentia AI</h2>
+            <h2 className="font-semibold text-foreground">Providentia AI</h2>
             <p className="text-xs text-muted-foreground">Your intelligent farm assistant</p>
           </div>
         </div>
@@ -73,10 +73,10 @@ export function AgriChatbot() {
           <div className="space-y-6">
             <div className="text-center py-8">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-primary" />
+                <Zap className="w-8 h-8 text-primary" />
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-2">
-                Welcome to AgriProvidentia AI
+                Welcome to Providentia AI
               </h3>
               <p className="text-muted-foreground max-w-md mx-auto">
                 I'm your intelligent farm assistant. Ask me about equipment health, maintenance, 
@@ -87,7 +87,7 @@ export function AgriChatbot() {
             {/* Quick Actions Grid */}
             <div className="space-y-3">
               <p className="text-sm font-medium text-muted-foreground text-center">Quick Actions</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 {QUICK_ACTIONS.map((action) => (
                   <button
                     key={action.id}
@@ -95,7 +95,7 @@ export function AgriChatbot() {
                     className="flex flex-col items-center gap-2 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors border border-transparent hover:border-primary/20"
                     disabled={isLoading}
                   >
-                    <span className="text-2xl">{action.icon}</span>
+                    <span className="text-lg font-mono text-primary">{action.icon}</span>
                     <span className="text-xs font-medium text-foreground text-center">{action.label}</span>
                   </button>
                 ))}
@@ -111,6 +111,7 @@ export function AgriChatbot() {
                   "Show me all critical equipment issues",
                   "Create a work order for solar pump SP-001",
                   "What parts are low in stock?",
+                  "Generate a report for the latest prediction",
                 ].map((prompt, i) => (
                   <button
                     key={i}
@@ -188,7 +189,7 @@ export function AgriChatbot() {
                 <div className="bg-muted rounded-xl px-4 py-3">
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                    <span className="text-sm text-muted-foreground">Thinking...</span>
+                    <span className="text-sm text-muted-foreground">Analyzing...</span>
                   </div>
                 </div>
               </div>
@@ -223,7 +224,7 @@ export function AgriChatbot() {
           </Button>
         </div>
         <p className="text-[10px] text-muted-foreground mt-2 text-center">
-          © 2026 AgriProvidentia Technologies • Press Enter to send, Shift+Enter for new line
+          [C] 2026 Providentia Technologies | Press Enter to send, Shift+Enter for new line
         </p>
       </form>
     </div>

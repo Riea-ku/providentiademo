@@ -1,6 +1,6 @@
 // ================================================
 // PROVIDENTIA ENTERPRISE AGRICULTURAL MANAGEMENT SYSTEM
-// © 2026 AgriProvidentia Technologies
+// © 2026 Providentia Technologies
 // Type Definitions
 // ================================================
 
@@ -259,6 +259,54 @@ export interface SystemStats {
   unacknowledged_alerts: number;
 }
 
+export type UserRole = 'admin' | 'manager' | 'ops' | 'technician';
+
+export interface Profile {
+  id: string;
+  user_id: string | null;
+  email: string | null;
+  full_name: string | null;
+  role: UserRole;
+  avatar_url: string | null;
+  phone: string | null;
+  department: string | null;
+  farm_id: string | null;
+  permissions: Record<string, any>;
+  is_active: boolean;
+  last_login_at: string | null;
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Report {
+  id: string;
+  report_number: string;
+  report_type: 'prediction' | 'maintenance' | 'summary' | 'monthly' | 'equipment_analysis' | 'cost_analysis';
+  title: string;
+  equipment_id: string | null;
+  prediction_id: string | null;
+  generated_by: string | null;
+  sections: ReportSections;
+  summary: string | null;
+  recommendations: string[];
+  metrics: Record<string, any>;
+  status: 'generating' | 'generated' | 'sent' | 'archived';
+  sent_to: string[];
+  sent_at: string | null;
+  metadata: Record<string, any>;
+  created_at: string;
+}
+
+export interface ReportSections {
+  executive_summary?: string;
+  technical_analysis?: string;
+  risk_assessment?: string;
+  recommendations?: string;
+  cost_analysis?: string;
+  maintenance_plan?: string;
+}
+
 export interface QuickAction {
   id: string;
   label: string;
@@ -267,15 +315,28 @@ export interface QuickAction {
   category: 'equipment' | 'maintenance' | 'inventory' | 'analytics' | 'scheduling';
 }
 
+// Status symbols for display (no emojis)
+export const STATUS_SYMBOLS = {
+  OPERATIONAL: '[*]',    // Operational/Healthy
+  WARNING: '[!]',        // Warning/Needs attention  
+  CRITICAL: '[X]',       // Critical/Urgent
+  MAINTENANCE: '[~]',    // In maintenance
+  ACTION: '[>]',         // Recommended action
+  INFO: '[i]',           // Information
+  SUCCESS: '[+]',        // Success
+  PENDING: '[?]',        // Pending
+} as const;
+
 export const QUICK_ACTIONS: QuickAction[] = [
-  { id: 'check-equipment', label: 'Check Equipment', icon: '🔍', prompt: 'Show me all equipment with warnings or critical status', category: 'equipment' },
-  { id: 'run-prediction', label: 'Run Prediction', icon: '🔮', prompt: 'Run a health prediction on all tractors', category: 'equipment' },
-  { id: 'active-orders', label: 'Active Work Orders', icon: '📋', prompt: 'Show all active work orders', category: 'maintenance' },
-  { id: 'schedule-tech', label: 'Schedule Technician', icon: '👨‍🔧', prompt: 'Show available technicians and their skills', category: 'scheduling' },
-  { id: 'low-inventory', label: 'Low Inventory', icon: '📦', prompt: 'Show all items that need reordering', category: 'inventory' },
-  { id: 'create-po', label: 'Create Purchase Order', icon: '🛒', prompt: 'Help me create a purchase order for low stock items', category: 'inventory' },
-  { id: 'costs-report', label: 'Cost Report', icon: '💰', prompt: 'Show me a cost breakdown for this month', category: 'analytics' },
-  { id: 'equipment-health', label: 'Health Overview', icon: '❤️', prompt: 'Give me an equipment health overview', category: 'analytics' },
-  { id: 'book-facility', label: 'Book Facility', icon: '🏭', prompt: 'Show available facilities and help me book one', category: 'scheduling' },
-  { id: 'alerts', label: 'View Alerts', icon: '🚨', prompt: 'Show all unacknowledged alerts', category: 'maintenance' },
+  { id: 'check-equipment', label: 'Check Equipment', icon: '[*]', prompt: 'Show me all equipment with warnings or critical status', category: 'equipment' },
+  { id: 'run-prediction', label: 'Run Prediction', icon: '[>]', prompt: 'Run a health prediction on all tractors', category: 'equipment' },
+  { id: 'active-orders', label: 'Active Work Orders', icon: '[~]', prompt: 'Show all active work orders', category: 'maintenance' },
+  { id: 'schedule-tech', label: 'Schedule Technician', icon: '[+]', prompt: 'Show available technicians and their skills', category: 'scheduling' },
+  { id: 'low-inventory', label: 'Low Inventory', icon: '[!]', prompt: 'Show all items that need reordering', category: 'inventory' },
+  { id: 'create-po', label: 'Create Purchase Order', icon: '[>]', prompt: 'Help me create a purchase order for low stock items', category: 'inventory' },
+  { id: 'costs-report', label: 'Cost Report', icon: '[i]', prompt: 'Show me a cost breakdown for this month', category: 'analytics' },
+  { id: 'equipment-health', label: 'Health Overview', icon: '[*]', prompt: 'Give me an equipment health overview', category: 'analytics' },
+  { id: 'book-facility', label: 'Book Facility', icon: '[~]', prompt: 'Show available facilities and help me book one', category: 'scheduling' },
+  { id: 'alerts', label: 'View Alerts', icon: '[X]', prompt: 'Show all unacknowledged alerts', category: 'maintenance' },
+  { id: 'generate-report', label: 'Generate Report', icon: '[>]', prompt: 'Generate a technical report for the latest prediction', category: 'analytics' },
 ];

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Play, RotateCcw, Sparkles } from 'lucide-react';
+import { Play, RotateCcw, Zap, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { EquipmentSelector } from './EquipmentSelector';
 import { SensorInput } from './SensorInput';
 import { PredictionResultCard } from './PredictionResult';
+import { PredictionExplainer } from './PredictionExplainer';
 import { runPrediction } from '@/lib/prediction-engine';
 import { EquipmentType, SensorData, PredictionResult, EQUIPMENT_CONFIG } from '@/types/equipment';
 import { toast } from 'sonner';
@@ -40,6 +41,7 @@ export function PredictionPanel() {
   const [sensorData, setSensorData] = useState<SensorData>(() => getDefaultSensorData('solar_water_pump'));
   const [result, setResult] = useState<PredictionResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showExplainer, setShowExplainer] = useState(false);
   
   function getDefaultSensorData(type: EquipmentType): SensorData {
     const config = EQUIPMENT_CONFIG[type];
@@ -54,6 +56,7 @@ export function PredictionPanel() {
     setEquipmentType(type);
     setSensorData(getDefaultSensorData(type));
     setResult(null);
+    setShowExplainer(false);
   }, []);
   
   const handleSensorChange = useCallback((key: string, value: number) => {
@@ -62,6 +65,7 @@ export function PredictionPanel() {
   
   const handlePredict = useCallback(async () => {
     setIsLoading(true);
+    setShowExplainer(false);
     
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 800));
@@ -88,6 +92,7 @@ export function PredictionPanel() {
   const handleReset = useCallback(() => {
     setSensorData(getDefaultSensorData(equipmentType));
     setResult(null);
+    setShowExplainer(false);
     toast.info('Sensors reset to default values');
   }, [equipmentType]);
   
@@ -97,10 +102,15 @@ export function PredictionPanel() {
       ...FAILURE_PRESETS[equipmentType],
     }));
     setResult(null);
+    setShowExplainer(false);
     toast.info('Loaded failure example', {
       description: 'Sensor values set to simulate equipment failure.',
     });
   }, [equipmentType]);
+  
+  const handleExplain = useCallback(() => {
+    setShowExplainer(true);
+  }, []);
   
   const config = EQUIPMENT_CONFIG[equipmentType];
   
@@ -123,97 +133,122 @@ export function PredictionPanel() {
   });
   
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Input Panel */}
-      <Card className="border-border/50">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold">Equipment Prediction</CardTitle>
-            <div className="text-xs text-muted-foreground">
-              Model: <span className="font-semibold text-primary">RandomForest v2.1</span>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Input Panel */}
+        <Card className="border-border/50">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-semibold">Equipment Prediction</CardTitle>
+              <div className="text-xs text-muted-foreground">
+                Model: <span className="font-semibold text-primary">RandomForest v2.1</span>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Equipment Selection */}
-          <EquipmentSelector 
-            selected={equipmentType} 
-            onSelect={handleEquipmentChange} 
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Equipment Selection */}
+            <EquipmentSelector 
+              selected={equipmentType} 
+              onSelect={handleEquipmentChange} 
+            />
+            
+            {/* Sensor Inputs */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">Sensor Readings</h3>
+                <span className="text-xs text-muted-foreground">
+                  {config.sensors.length} sensors
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {config.sensors.map((sensor, idx) => (
+                  <SensorInput
+                    key={sensor.key}
+                    sensor={sensor}
+                    value={(sensorData as Record<string, number>)[sensor.key] ?? sensor.default}
+                    onChange={handleSensorChange}
+                    warning={sensorStates[idx].warning}
+                    error={sensorStates[idx].error}
+                  />
+                ))}
+              </div>
+            </div>
+            
+            {/* Farmer ID */}
+            <div className="space-y-2">
+              <Label htmlFor="farmer_id">Farmer ID</Label>
+              <Input
+                id="farmer_id"
+                value={farmerId}
+                onChange={(e) => setFarmerId(e.target.value)}
+                placeholder="farm_001"
+                className="bg-secondary/50"
+              />
+              <p className="text-xs text-muted-foreground">
+                Farmer ID is saved locally for convenience.
+              </p>
+            </div>
+            
+            {/* Actions */}
+            <div className="flex gap-3">
+              <Button 
+                onClick={handlePredict} 
+                className="flex-1 gap-2"
+                disabled={isLoading}
+              >
+                <Play className="h-4 w-4" />
+                Run Prediction
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleLoadExample}
+                className="gap-2"
+              >
+                <Zap className="h-4 w-4" />
+                Load Example
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleReset}
+                className="gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reset
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Result Panel */}
+        <div className="space-y-4">
+          <PredictionResultCard 
+            result={result} 
+            isLoading={isLoading}
+            onGenerateQuote={() => toast.info('Quote generation coming soon!')}
           />
           
-          {/* Sensor Inputs */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">Sensor Readings</h3>
-              <span className="text-xs text-muted-foreground">
-                {config.sensors.length} sensors • {config.icon} {config.name}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {config.sensors.map((sensor, idx) => (
-                <SensorInput
-                  key={sensor.key}
-                  sensor={sensor}
-                  value={(sensorData as Record<string, number>)[sensor.key] ?? sensor.default}
-                  onChange={handleSensorChange}
-                  warning={sensorStates[idx].warning}
-                  error={sensorStates[idx].error}
-                />
-              ))}
-            </div>
-          </div>
-          
-          {/* Farmer ID */}
-          <div className="space-y-2">
-            <Label htmlFor="farmer_id">Farmer ID</Label>
-            <Input
-              id="farmer_id"
-              value={farmerId}
-              onChange={(e) => setFarmerId(e.target.value)}
-              placeholder="farm_001"
-              className="bg-secondary/50"
-            />
-            <p className="text-xs text-muted-foreground">
-              Farmer ID is saved locally for convenience.
-            </p>
-          </div>
-          
-          {/* Actions */}
-          <div className="flex gap-3">
-            <Button 
-              onClick={handlePredict} 
-              className="flex-1 gap-2"
-              disabled={isLoading}
-            >
-              <Play className="h-4 w-4" />
-              Run Prediction
-            </Button>
+          {/* Explain Button */}
+          {result && result.prediction !== 'HEALTHY' && !showExplainer && (
             <Button 
               variant="outline" 
-              onClick={handleLoadExample}
-              className="gap-2"
+              className="w-full gap-2"
+              onClick={handleExplain}
             >
-              <Sparkles className="h-4 w-4" />
-              Load Example
+              <MessageSquare className="h-4 w-4" />
+              [?] Explain What's Wrong in Plain Language
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleReset}
-              className="gap-2"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Reset
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
       
-      {/* Result Panel */}
-      <PredictionResultCard 
-        result={result} 
-        isLoading={isLoading}
-        onGenerateQuote={() => toast.info('Quote generation coming soon!')}
-      />
+      {/* Explainer Panel */}
+      {showExplainer && result && (
+        <PredictionExplainer 
+          result={result}
+          equipmentType={equipmentType}
+          sensorData={sensorData}
+        />
+      )}
     </div>
   );
 }

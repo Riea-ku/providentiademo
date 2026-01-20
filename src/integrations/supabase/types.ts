@@ -1037,6 +1037,68 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          department: string | null
+          email: string | null
+          farm_id: string | null
+          full_name: string | null
+          id: string
+          is_active: boolean | null
+          last_login_at: string | null
+          metadata: Json | null
+          permissions: Json | null
+          phone: string | null
+          role: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          farm_id?: string | null
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_login_at?: string | null
+          metadata?: Json | null
+          permissions?: Json | null
+          phone?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          farm_id?: string | null
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_login_at?: string | null
+          metadata?: Json | null
+          permissions?: Json | null
+          phone?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_orders: {
         Row: {
           actual_delivery_date: string | null
@@ -1108,6 +1170,85 @@ export type Database = {
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string
+          equipment_id: string | null
+          generated_by: string | null
+          id: string
+          metadata: Json | null
+          metrics: Json | null
+          prediction_id: string | null
+          recommendations: string[] | null
+          report_number: string | null
+          report_type: string
+          sections: Json
+          sent_at: string | null
+          sent_to: string[] | null
+          status: string | null
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          equipment_id?: string | null
+          generated_by?: string | null
+          id?: string
+          metadata?: Json | null
+          metrics?: Json | null
+          prediction_id?: string | null
+          recommendations?: string[] | null
+          report_number?: string | null
+          report_type: string
+          sections?: Json
+          sent_at?: string | null
+          sent_to?: string[] | null
+          status?: string | null
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          equipment_id?: string | null
+          generated_by?: string | null
+          id?: string
+          metadata?: Json | null
+          metrics?: Json | null
+          prediction_id?: string | null
+          recommendations?: string[] | null
+          report_number?: string | null
+          report_type?: string
+          sections?: Json
+          sent_at?: string | null
+          sent_to?: string[] | null
+          status?: string | null
+          summary?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_generated_by_fkey"
+            columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "predictions"
             referencedColumns: ["id"]
           },
         ]
