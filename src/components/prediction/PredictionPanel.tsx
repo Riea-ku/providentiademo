@@ -249,6 +249,17 @@ export function PredictionPanel() {
           sensorData={sensorData}
         />
       )}
+      
+      {/* Chatbot Panel - Always visible when prediction exists */}
+      {result && (
+        <div className="mt-6">
+          <PredictionChatbot
+            predictionResult={result}
+            equipmentType={equipmentType}
+            sensorData={sensorData}
+          />
+        </div>
+      )}
     </div>
   );
 }
