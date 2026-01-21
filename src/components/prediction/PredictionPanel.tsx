@@ -8,6 +8,7 @@ import { EquipmentSelector } from './EquipmentSelector';
 import { SensorInput } from './SensorInput';
 import { PredictionResultCard } from './PredictionResult';
 import { PredictionExplainer } from './PredictionExplainer';
+import { PredictionChatbot } from './PredictionChatbot';
 import { runPrediction } from '@/lib/prediction-engine';
 import { EquipmentType, SensorData, PredictionResult, EQUIPMENT_CONFIG } from '@/types/equipment';
 import { toast } from 'sonner';
