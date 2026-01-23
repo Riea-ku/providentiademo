@@ -15,10 +15,10 @@ const recentPredictions = [
 
 const getStatusSymbol = (status: string) => {
   switch (status) {
-    case 'HEALTHY': return '[*]';
-    case 'WARNING': return '[!]';
-    case 'FAILURE': return '[X]';
-    default: return '[?]';
+    case 'HEALTHY': return '✅';
+    case 'WARNING': return '⚠️';
+    case 'FAILURE': return '🔴';
+    default: return '❓';
   }
 };
 
