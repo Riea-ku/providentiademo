@@ -14,6 +14,7 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
+  Brain,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { title: 'Dashboard', icon: <LayoutDashboard className="h-5 w-5" />, href: '/' },
   { title: 'Predictions', icon: <Activity className="h-5 w-5" />, href: '/predictions' },
+  { title: 'AI Analytics', icon: <Brain className="h-5 w-5" />, href: '/analytics-enhanced' },
   { title: 'Equipment', icon: <Tractor className="h-5 w-5" />, href: '/equipment' },
   { title: 'Farms', icon: <Building2 className="h-5 w-5" />, href: '/farms' },
   { title: 'Work Orders', icon: <Wrench className="h-5 w-5" />, href: '/work-orders', badge: 8 },
