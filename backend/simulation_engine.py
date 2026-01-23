@@ -243,6 +243,10 @@ class SimulationEngine:
         engine = AnalyticsEngine(simulation.prediction_data)
         analytics_package = engine.generate_analytics_package()
         
+        # Extract impact details before converting to dict
+        impact = analytics_package.impact_analysis.total_financial_impact
+        downtime = analytics_package.impact_analysis.downtime_hours
+        
         analytics_data = {
             "id": f"ANALYTICS-{simulation.prediction_data['id']}",
             "prediction_id": simulation.prediction_data['id'],
@@ -255,7 +259,7 @@ class SimulationEngine:
         step.status = "complete"
         step.completed_at = datetime.now().isoformat()
         step.result = {"analytics_id": analytics_data["id"]}
-        step.details = f"Impact: ${analytics_package.impact_analysis.total_financial_impact:,.0f}, Downtime: {analytics_package.impact_analysis.downtime_hours}h"
+        step.details = f"Impact: ${impact:,.0f}, Downtime: {downtime}h"
         
         await self._update_and_broadcast(simulation, step, "✅ Analytics complete - impact assessed")
     
