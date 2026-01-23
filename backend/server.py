@@ -574,6 +574,115 @@ async def chatbot_message(request: ChatMessageRequest):
         }
 
 
+
+# ============================================================================
+# AI ANALYTICS SIMULATION ENDPOINTS (NEW INTERACTIVE SYSTEM)
+# ============================================================================
+
+@api_router.post("/ai-analytics/simulate-failure")
+async def simulate_failure_cycle(request: SimulationRequest, background_tasks: BackgroundTasks):
+    """
+    Advanced simulation endpoint with real-time progress tracking
+    Executes full 6-step pipeline: Prediction → Analytics → Report → Inventory → Dispatch → Notify
+    """
+    try:
+        logger.info(f"Starting simulation for failure mode: {request.failure_mode}")
+        
+        # Start simulation in background
+        simulation = await simulation_engine.run_simulation(request)
+        
+        return {
+            "success": True,
+            "simulation_id": simulation.id,
+            "status": simulation.status,
+            "message": "Simulation started - connect to WebSocket for live updates",
+            "websocket_url": f"/ws/simulation-progress/{simulation.id}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Simulation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/ai-analytics/simulation/{simulation_id}")
+async def get_simulation_status(simulation_id: str):
+    """Get current status and results of a simulation"""
+    try:
+        simulation = await db.ai_simulations.find_one({"id": simulation_id})
+        if not simulation:
+            raise HTTPException(status_code=404, detail="Simulation not found")
+        
+        simulation.pop("_id", None)
+        return {
+            "success": True,
+            "simulation": simulation
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/ai-analytics/simulations")
+async def list_simulations(limit: int = 20):
+    """List recent simulations"""
+    try:
+        simulations = await db.ai_simulations.find().sort("started_at", -1).limit(limit).to_list(limit)
+        
+        for sim in simulations:
+            sim.pop("_id", None)
+        
+        return {
+            "success": True,
+            "count": len(simulations),
+            "simulations": simulations
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# WEBSOCKET ENDPOINT FOR REAL-TIME UPDATES
+# ============================================================================
+
+@app.websocket("/ws/simulation-progress/{simulation_id}")
+async def websocket_simulation_progress(websocket: WebSocket, simulation_id: str):
+    """
+    WebSocket endpoint for real-time simulation progress updates
+    Clients receive updates as each step completes
+    """
+    await ws_manager.connect(simulation_id, websocket)
+    
+    try:
+        # Send initial connection confirmation
+        await websocket.send_json({
+            "type": "connected",
+            "simulation_id": simulation_id,
+            "message": "Connected to simulation feed"
+        })
+        
+        # Keep connection alive and listen for messages
+        while True:
+            try:
+                # Wait for any client messages (ping/pong, etc.)
+                data = await websocket.receive_text()
+                
+                # Echo back or handle commands if needed
+                if data == "ping":
+                    await websocket.send_json({"type": "pong"})
+                    
+            except WebSocketDisconnect:
+                break
+            except Exception as e:
+                logger.error(f"WebSocket error: {e}")
+                break
+    
+    finally:
+        ws_manager.disconnect(simulation_id, websocket)
+
+
 # ============================================================================
 # DEMO & SIMULATION ENDPOINTS
 # ============================================================================
