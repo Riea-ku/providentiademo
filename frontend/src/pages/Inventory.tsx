@@ -41,10 +41,10 @@ interface ChatMessage {
 }
 
 const STATUS_SYMBOLS = {
-  in_stock: '[*]',
-  low_stock: '[!]',
-  out_of_stock: '[X]',
-  reserved: '[#]'
+  in_stock: '✅',
+  low_stock: '⚠️',
+  out_of_stock: '🔴',
+  reserved: '📦'
 };
 
 const Inventory = () => {
@@ -315,7 +315,7 @@ const Inventory = () => {
                         className="w-full text-left justify-start"
                         onClick={() => setChatInput('What items need to be reordered?')}
                       >
-                        {'[>]'} What items need to be reordered?
+                        {'▶️'} What items need to be reordered?
                       </Button>
                       <Button 
                         variant="outline" 
@@ -323,7 +323,7 @@ const Inventory = () => {
                         className="w-full text-left justify-start"
                         onClick={() => setChatInput('Show me low stock alerts')}
                       >
-                        {'[>]'} Show me low stock alerts
+                        {'▶️'} Show me low stock alerts
                       </Button>
                       <Button 
                         variant="outline" 
@@ -331,7 +331,7 @@ const Inventory = () => {
                         className="w-full text-left justify-start"
                         onClick={() => setChatInput('Calculate total inventory value')}
                       >
-                        {'[>]'} Calculate total inventory value
+                        {'▶️'} Calculate total inventory value
                       </Button>
                     </div>
                   </div>

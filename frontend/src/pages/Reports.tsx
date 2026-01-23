@@ -42,10 +42,10 @@ interface ChatMessage {
 }
 
 const STATUS_SYMBOLS = {
-  generated: '[*]',
-  pending: '[~]',
-  sent: '[>]',
-  error: '[X]'
+  generated: '✅',
+  pending: '⏳',
+  sent: '📤',
+  error: '🔴'
 };
 
 const Reports = () => {
@@ -380,7 +380,7 @@ const Reports = () => {
                         className="w-full text-left justify-start"
                         onClick={() => setChatInput('Create a weekly maintenance summary')}
                       >
-                        {'[>]'} Create weekly maintenance summary
+                        {'▶️'} Create weekly maintenance summary
                       </Button>
                       <Button 
                         variant="outline" 
@@ -388,7 +388,7 @@ const Reports = () => {
                         className="w-full text-left justify-start"
                         onClick={() => setChatInput('Generate a cost analysis report')}
                       >
-                        {'[>]'} Generate cost analysis report
+                        {'▶️'} Generate cost analysis report
                       </Button>
                       <Button 
                         variant="outline" 
@@ -396,7 +396,7 @@ const Reports = () => {
                         className="w-full text-left justify-start"
                         onClick={() => setChatInput('Explain what should be in a prediction report')}
                       >
-                        {'[>]'} What's in a prediction report?
+                        {'▶️'} What's in a prediction report?
                       </Button>
                       <Button 
                         variant="outline" 
@@ -404,7 +404,7 @@ const Reports = () => {
                         className="w-full text-left justify-start"
                         onClick={() => setChatInput('Schedule automated weekly reports')}
                       >
-                        {'[>]'} Schedule automated reports
+                        {'▶️'} Schedule automated reports
                       </Button>
                     </div>
                   </div>

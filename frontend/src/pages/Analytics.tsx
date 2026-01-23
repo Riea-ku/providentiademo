@@ -263,7 +263,7 @@ const Analytics = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Maintenance Cost</p>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-primary">[#]</span>
+                      <span className="font-mono text-primary">💰</span>
                       <p className="text-2xl font-bold">${analytics.totalMaintenanceCost.toLocaleString()}</p>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">This month</p>
@@ -423,7 +423,7 @@ const Analytics = () => {
                         className="w-full text-left justify-start"
                         onClick={() => setChatInput('Summarize this month\'s performance')}
                       >
-                        {'[>]'} Summarize this month's performance
+                        {'▶️'} Summarize this month's performance
                       </Button>
                       <Button 
                         variant="outline" 
@@ -431,7 +431,7 @@ const Analytics = () => {
                         className="w-full text-left justify-start"
                         onClick={() => setChatInput('What does MTBF mean and is ours good?')}
                       >
-                        {'[>]'} What does MTBF mean?
+                        {'▶️'} What does MTBF mean?
                       </Button>
                       <Button 
                         variant="outline" 
@@ -439,7 +439,7 @@ const Analytics = () => {
                         className="w-full text-left justify-start"
                         onClick={() => setChatInput('Show me cost trends and recommendations')}
                       >
-                        {'[>]'} Cost trends and recommendations
+                        {'▶️'} Cost trends and recommendations
                       </Button>
                       <Button 
                         variant="outline" 
@@ -447,7 +447,7 @@ const Analytics = () => {
                         className="w-full text-left justify-start"
                         onClick={() => setChatInput('Which technician is most productive?')}
                       >
-                        {'[>]'} Top performing technicians
+                        {'▶️'} Top performing technicians
                       </Button>
                     </div>
                   </div>
