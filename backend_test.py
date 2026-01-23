@@ -354,6 +354,235 @@ class BackendTester:
         except Exception as e:
             self.log_test("Demo Simulation", False, f"Request failed: {str(e)}")
     
+    def test_ai_analytics_simulate_failure(self):
+        """Test POST /api/ai-analytics/simulate-failure with different failure modes"""
+        failure_modes = ["bearing_wear", "motor_overheat", "pump_cavitation"]
+        
+        for failure_mode in failure_modes:
+            try:
+                payload = {
+                    "failure_mode": failure_mode,
+                    "equipment_id": "pump-001",
+                    "run_full_cycle": True
+                }
+                
+                response = self.session.post(
+                    f"{BACKEND_URL}/ai-analytics/simulate-failure",
+                    json=payload,
+                    timeout=30  # Longer timeout for full simulation
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if (data.get('success') and 'simulation_id' in data and 
+                        'status' in data and 'websocket_url' in data):
+                        
+                        # Store simulation ID for later tests
+                        if not hasattr(self, 'simulation_ids'):
+                            self.simulation_ids = []
+                        self.simulation_ids.append(data['simulation_id'])
+                        
+                        self.log_test(
+                            f"AI Analytics Simulation ({failure_mode})", 
+                            True, 
+                            f"Simulation started successfully. ID: {data['simulation_id']}, Status: {data['status']}",
+                            data
+                        )
+                    else:
+                        self.log_test(f"AI Analytics Simulation ({failure_mode})", False, f"Invalid response structure: {data}")
+                else:
+                    self.log_test(f"AI Analytics Simulation ({failure_mode})", False, f"HTTP {response.status_code}: {response.text}")
+                    
+            except Exception as e:
+                self.log_test(f"AI Analytics Simulation ({failure_mode})", False, f"Request failed: {str(e)}")
+    
+    def test_ai_analytics_get_simulation_status(self):
+        """Test GET /api/ai-analytics/simulation/{simulation_id}"""
+        if not hasattr(self, 'simulation_ids') or not self.simulation_ids:
+            self.log_test("Get Simulation Status", False, "No simulation_id available from previous test")
+            return
+        
+        # Test with the first simulation ID
+        simulation_id = self.simulation_ids[0]
+        
+        try:
+            # Wait a bit for simulation to complete
+            time.sleep(3)
+            
+            response = self.session.get(f"{BACKEND_URL}/ai-analytics/simulation/{simulation_id}", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if data.get('success') and 'simulation' in data:
+                    simulation = data['simulation']
+                    required_fields = ['id', 'failure_mode', 'status', 'steps']
+                    
+                    if all(field in simulation for field in required_fields):
+                        # Check if all 6 steps are present
+                        steps = simulation.get('steps', [])
+                        if len(steps) == 6:
+                            completed_steps = sum(1 for step in steps if step.get('status') == 'complete')
+                            
+                            # Check for results data
+                            result_fields = ['prediction_data', 'analytics_data', 'report_data', 
+                                           'inventory_data', 'dispatch_data', 'notifications_data']
+                            present_results = sum(1 for field in result_fields if simulation.get(field))
+                            
+                            self.log_test(
+                                "Get Simulation Status", 
+                                True, 
+                                f"Simulation retrieved. Status: {simulation['status']}, Steps: {completed_steps}/6 complete, Results: {present_results}/6 present",
+                                {"simulation_id": simulation_id, "status": simulation['status']}
+                            )
+                        else:
+                            self.log_test("Get Simulation Status", False, f"Expected 6 steps, got {len(steps)}")
+                    else:
+                        self.log_test("Get Simulation Status", False, f"Missing required fields in simulation: {simulation}")
+                else:
+                    self.log_test("Get Simulation Status", False, f"Invalid response structure: {data}")
+            elif response.status_code == 404:
+                self.log_test("Get Simulation Status", False, "Simulation not found - possible storage issue")
+            else:
+                self.log_test("Get Simulation Status", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Get Simulation Status", False, f"Request failed: {str(e)}")
+    
+    def test_ai_analytics_list_simulations(self):
+        """Test GET /api/ai-analytics/simulations"""
+        try:
+            response = self.session.get(f"{BACKEND_URL}/ai-analytics/simulations", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if 'success' in data and 'simulations' in data and 'count' in data:
+                    simulation_count = data['count']
+                    simulations = data['simulations']
+                    
+                    # Validate simulation structure
+                    if simulation_count > 0 and simulations:
+                        first_sim = simulations[0]
+                        required_fields = ['id', 'failure_mode', 'status', 'started_at']
+                        
+                        if all(field in first_sim for field in required_fields):
+                            self.log_test(
+                                "List AI Analytics Simulations", 
+                                True, 
+                                f"Simulations listed successfully. Count: {simulation_count}",
+                                {"count": simulation_count}
+                            )
+                        else:
+                            self.log_test("List AI Analytics Simulations", False, f"Invalid simulation structure: {first_sim}")
+                    else:
+                        self.log_test(
+                            "List AI Analytics Simulations", 
+                            True, 
+                            f"Simulations endpoint working. Count: {simulation_count} (no simulations yet)",
+                            {"count": simulation_count}
+                        )
+                else:
+                    self.log_test("List AI Analytics Simulations", False, f"Invalid response format: {data}")
+            else:
+                self.log_test("List AI Analytics Simulations", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("List AI Analytics Simulations", False, f"Request failed: {str(e)}")
+    
+    def test_ai_analytics_verify_complete_workflow(self):
+        """Verify that simulation contains all 6 steps with complete data"""
+        if not hasattr(self, 'simulation_ids') or not self.simulation_ids:
+            self.log_test("Verify Complete Workflow", False, "No simulation_id available from previous test")
+            return
+        
+        simulation_id = self.simulation_ids[0]
+        
+        try:
+            # Wait for simulation to complete
+            time.sleep(5)
+            
+            response = self.session.get(f"{BACKEND_URL}/ai-analytics/simulation/{simulation_id}", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                simulation = data.get('simulation', {})
+                
+                # Check all 6 steps
+                steps = simulation.get('steps', [])
+                step_names = [
+                    "AI Generates Failure Prediction",
+                    "Analytics & Impact Assessment", 
+                    "Report Auto-Generation",
+                    "Inventory Check & Reservation",
+                    "Technician Auto-Dispatch",
+                    "Notifications Sent"
+                ]
+                
+                workflow_issues = []
+                
+                # Verify step completion
+                if len(steps) != 6:
+                    workflow_issues.append(f"Expected 6 steps, got {len(steps)}")
+                else:
+                    for i, expected_name in enumerate(step_names):
+                        if i < len(steps):
+                            step = steps[i]
+                            if step.get('step_name') != expected_name:
+                                workflow_issues.append(f"Step {i+1} name mismatch: expected '{expected_name}', got '{step.get('step_name')}'")
+                            if step.get('status') != 'complete':
+                                workflow_issues.append(f"Step {i+1} ({expected_name}) not complete: {step.get('status')}")
+                
+                # Verify result data
+                result_fields = {
+                    'prediction_data': 'Prediction generation',
+                    'analytics_data': 'Analytics processing',
+                    'report_data': 'Report generation',
+                    'inventory_data': 'Inventory check',
+                    'dispatch_data': 'Technician dispatch',
+                    'notifications_data': 'Notifications'
+                }
+                
+                for field, description in result_fields.items():
+                    if not simulation.get(field):
+                        workflow_issues.append(f"Missing {description} data ({field})")
+                
+                # Check for different failure mode predictions
+                prediction_data = simulation.get('prediction_data', {})
+                failure_mode = simulation.get('failure_mode')
+                predicted_failure = prediction_data.get('predicted_failure', '')
+                
+                if failure_mode and predicted_failure:
+                    expected_failures = {
+                        'bearing_wear': 'Bearing Wear',
+                        'motor_overheat': 'Motor Overheat', 
+                        'pump_cavitation': 'Pump Cavitation'
+                    }
+                    expected = expected_failures.get(failure_mode)
+                    if expected and predicted_failure != expected:
+                        workflow_issues.append(f"Failure mode mismatch: {failure_mode} should predict '{expected}', got '{predicted_failure}'")
+                
+                if not workflow_issues:
+                    self.log_test(
+                        "Verify Complete Workflow", 
+                        True, 
+                        f"Complete 6-step workflow verified. All steps complete with proper data for {failure_mode}",
+                        {
+                            "simulation_id": simulation_id,
+                            "failure_mode": failure_mode,
+                            "predicted_failure": predicted_failure,
+                            "status": simulation.get('status')
+                        }
+                    )
+                else:
+                    self.log_test("Verify Complete Workflow", False, f"Workflow issues: {'; '.join(workflow_issues)}")
+            else:
+                self.log_test("Verify Complete Workflow", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Verify Complete Workflow", False, f"Request failed: {str(e)}")
+    
     def run_all_tests(self):
         """Run all backend tests in sequence"""
         print(f"\n🚀 Starting Backend Testing Suite for Vida AI Analytics System")
