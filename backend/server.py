@@ -43,6 +43,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Initialize WebSocket Manager and Simulation Engine
+ws_manager = WebSocketManager()
+simulation_engine = SimulationEngine(db, ws_manager)
+
 
 # ============================================================================
 # MODELS
