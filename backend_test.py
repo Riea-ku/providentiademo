@@ -592,6 +592,18 @@ class BackendTester:
         
         # Test in logical order to build up test data
         self.test_health_check()
+        
+        # Test new AI Analytics Simulation endpoints (HIGH PRIORITY)
+        print(f"\n🔬 Testing AI Analytics Simulation System (NEW FEATURE)")
+        print("-" * 50)
+        self.test_ai_analytics_simulate_failure()
+        self.test_ai_analytics_get_simulation_status()
+        self.test_ai_analytics_list_simulations()
+        self.test_ai_analytics_verify_complete_workflow()
+        
+        # Test existing endpoints
+        print(f"\n📊 Testing Existing Analytics Pipeline")
+        print("-" * 50)
         self.test_demo_simulation()  # Verify this still works
         self.test_generate_analytics()
         self.test_get_analytics()
@@ -610,11 +622,26 @@ class BackendTester:
         passed = sum(1 for result in self.test_results.values() if result['success'])
         total = len(self.test_results)
         
-        for test_name, result in self.test_results.items():
+        # Group results by category
+        ai_simulation_tests = [name for name in self.test_results.keys() if 'AI Analytics' in name or 'Simulation' in name or 'Workflow' in name]
+        existing_tests = [name for name in self.test_results.keys() if name not in ai_simulation_tests and name != 'Health Check']
+        
+        print("🔬 AI Analytics Simulation Tests:")
+        for test_name in ai_simulation_tests:
+            result = self.test_results[test_name]
             status = "✅ PASS" if result['success'] else "❌ FAIL"
-            print(f"{status} {test_name}")
+            print(f"  {status} {test_name}")
             if not result['success']:
-                print(f"    └─ {result['details']}")
+                print(f"      └─ {result['details']}")
+        
+        print(f"\n📊 Existing Analytics Pipeline Tests:")
+        for test_name in ['Health Check'] + existing_tests:
+            if test_name in self.test_results:
+                result = self.test_results[test_name]
+                status = "✅ PASS" if result['success'] else "❌ FAIL"
+                print(f"  {status} {test_name}")
+                if not result['success']:
+                    print(f"      └─ {result['details']}")
         
         print(f"\nOverall: {passed}/{total} tests passed ({(passed/total)*100:.1f}%)")
         
