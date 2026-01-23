@@ -11,6 +11,7 @@ import WorkOrders from "./pages/WorkOrders";
 import Inventory from "./pages/Inventory";
 import Analytics from "./pages/Analytics";
 import EnhancedAnalytics from "./pages/EnhancedAnalytics";
+import AIAnalyticsSimulation from "./pages/AIAnalyticsSimulation";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
