@@ -600,7 +600,9 @@ async def simulate_failure_cycle(request: SimulationRequest, background_tasks: B
         }
         
     except Exception as e:
+        import traceback
         logger.error(f"Simulation error: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -745,7 +747,9 @@ async def simulate_prediction():
         }
         
     except Exception as e:
+        import traceback
         logger.error(f"Simulation error: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
