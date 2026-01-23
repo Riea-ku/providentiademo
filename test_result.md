@@ -249,12 +249,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Demo Prediction Simulation Endpoint"
-    - "Enhanced Analytics Dashboard"
-    - "Claude Sonnet 4.5 Integration"
-    - "Report Generation Flow"
-    - "Dispatch Automation"
-  stuck_tasks: []
+    - "FastAPI Server with Analytics Endpoints"
+  stuck_tasks:
+    - "FastAPI Server with Analytics Endpoints"
   test_all: false
   test_priority: "high_first"
 
