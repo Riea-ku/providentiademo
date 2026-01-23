@@ -315,28 +315,28 @@ export interface QuickAction {
   category: 'equipment' | 'maintenance' | 'inventory' | 'analytics' | 'scheduling';
 }
 
-// Status symbols for display (no emojis)
+// Status symbols for display (using emojis)
 export const STATUS_SYMBOLS = {
-  OPERATIONAL: '[*]',    // Operational/Healthy
-  WARNING: '[!]',        // Warning/Needs attention  
-  CRITICAL: '[X]',       // Critical/Urgent
-  MAINTENANCE: '[~]',    // In maintenance
-  ACTION: '[>]',         // Recommended action
-  INFO: '[i]',           // Information
-  SUCCESS: '[+]',        // Success
-  PENDING: '[?]',        // Pending
+  OPERATIONAL: '✅',    // Operational/Healthy
+  WARNING: '⚠️',        // Warning/Needs attention  
+  CRITICAL: '🔴',       // Critical/Urgent
+  MAINTENANCE: '🔧',    // In maintenance
+  ACTION: '▶️',         // Recommended action
+  INFO: 'ℹ️',           // Information
+  SUCCESS: '✅',        // Success
+  PENDING: '⏳',        // Pending
 } as const;
 
 export const QUICK_ACTIONS: QuickAction[] = [
-  { id: 'check-equipment', label: 'Check Equipment', icon: '[*]', prompt: 'Show me all equipment with warnings or critical status', category: 'equipment' },
-  { id: 'run-prediction', label: 'Run Prediction', icon: '[>]', prompt: 'Run a health prediction on all tractors', category: 'equipment' },
-  { id: 'active-orders', label: 'Active Work Orders', icon: '[~]', prompt: 'Show all active work orders', category: 'maintenance' },
-  { id: 'schedule-tech', label: 'Schedule Technician', icon: '[+]', prompt: 'Show available technicians and their skills', category: 'scheduling' },
-  { id: 'low-inventory', label: 'Low Inventory', icon: '[!]', prompt: 'Show all items that need reordering', category: 'inventory' },
-  { id: 'create-po', label: 'Create Purchase Order', icon: '[>]', prompt: 'Help me create a purchase order for low stock items', category: 'inventory' },
-  { id: 'costs-report', label: 'Cost Report', icon: '[i]', prompt: 'Show me a cost breakdown for this month', category: 'analytics' },
-  { id: 'equipment-health', label: 'Health Overview', icon: '[*]', prompt: 'Give me an equipment health overview', category: 'analytics' },
-  { id: 'book-facility', label: 'Book Facility', icon: '[~]', prompt: 'Show available facilities and help me book one', category: 'scheduling' },
-  { id: 'alerts', label: 'View Alerts', icon: '[X]', prompt: 'Show all unacknowledged alerts', category: 'maintenance' },
-  { id: 'generate-report', label: 'Generate Report', icon: '[>]', prompt: 'Generate a technical report for the latest prediction', category: 'analytics' },
+  { id: 'check-equipment', label: 'Check Equipment', icon: '🔍', prompt: 'Show me all equipment with warnings or critical status', category: 'equipment' },
+  { id: 'run-prediction', label: 'Run Prediction', icon: '🎯', prompt: 'Run a health prediction on all tractors', category: 'equipment' },
+  { id: 'active-orders', label: 'Active Work Orders', icon: '📋', prompt: 'Show all active work orders', category: 'maintenance' },
+  { id: 'schedule-tech', label: 'Schedule Technician', icon: '👷', prompt: 'Show available technicians and their skills', category: 'scheduling' },
+  { id: 'low-inventory', label: 'Low Inventory', icon: '📦', prompt: 'Show all items that need reordering', category: 'inventory' },
+  { id: 'create-po', label: 'Create Purchase Order', icon: '📝', prompt: 'Help me create a purchase order for low stock items', category: 'inventory' },
+  { id: 'costs-report', label: 'Cost Report', icon: '💰', prompt: 'Show me a cost breakdown for this month', category: 'analytics' },
+  { id: 'equipment-health', label: 'Health Overview', icon: '💚', prompt: 'Give me an equipment health overview', category: 'analytics' },
+  { id: 'book-facility', label: 'Book Facility', icon: '🏭', prompt: 'Show available facilities and help me book one', category: 'scheduling' },
+  { id: 'alerts', label: 'View Alerts', icon: '🚨', prompt: 'Show all unacknowledged alerts', category: 'maintenance' },
+  { id: 'generate-report', label: 'Generate Report', icon: '📊', prompt: 'Generate a technical report for the latest prediction', category: 'analytics' },
 ];
