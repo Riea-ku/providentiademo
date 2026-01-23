@@ -592,8 +592,9 @@ async def simulate_prediction():
             "created_at": datetime.now().isoformat()
         }
         
-        # Store prediction
-        await db.predictions_demo.insert_one(mock_prediction)
+        # Store prediction (make a copy to avoid modifying original)
+        prediction_to_store = mock_prediction.copy()
+        await db.predictions_demo.insert_one(prediction_to_store)
         
         # Auto-generate analytics
         engine = AnalyticsEngine(mock_prediction)
@@ -608,7 +609,12 @@ async def simulate_prediction():
             "dispatched": False
         }
         
-        await db.prediction_analytics.insert_one(analytics_doc)
+        # Make a copy to avoid ObjectId issues
+        analytics_to_store = analytics_doc.copy()
+        await db.prediction_analytics.insert_one(analytics_to_store)
+        
+        # Remove _id from response
+        analytics_doc.pop('_id', None)
         
         return {
             "success": True,
