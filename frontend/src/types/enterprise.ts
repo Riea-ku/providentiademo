@@ -1,6 +1,6 @@
 // ================================================
-// PROVIDENTIA ENTERPRISE AGRICULTURAL MANAGEMENT SYSTEM
-// © 2026 Providentia Technologies
+// VIDA ENTERPRISE AGRICULTURAL MANAGEMENT SYSTEM
+// © 2026 Vida Technologies
 // Type Definitions
 // ================================================
 

@@ -42,7 +42,7 @@ export function AgriChatbot() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-card rounded-xl border border-border overflow-hidden max-w-4xl mx-auto">
+    <div className="flex flex-col h-full bg-card rounded-xl border border-border overflow-hidden max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
         <div className="flex items-center gap-3">
@@ -50,7 +50,7 @@ export function AgriChatbot() {
             <Bot className="w-5 h-5 text-primary-foreground" />
           </div>
           <div>
-            <h2 className="font-semibold text-foreground">Providentia AI</h2>
+            <h2 className="font-semibold text-foreground">Vida AI</h2>
             <p className="text-xs text-muted-foreground">Your intelligent farm assistant</p>
           </div>
         </div>
@@ -76,7 +76,7 @@ export function AgriChatbot() {
                 <Zap className="w-8 h-8 text-primary" />
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-2">
-                Welcome to Providentia AI
+                Welcome to Vida AI
               </h3>
               <p className="text-muted-foreground max-w-md mx-auto">
                 I'm your intelligent farm assistant. Ask me about equipment health, maintenance, 
@@ -224,7 +224,7 @@ export function AgriChatbot() {
           </Button>
         </div>
         <p className="text-[10px] text-muted-foreground mt-2 text-center">
-          [C] 2026 Providentia Technologies | Press Enter to send, Shift+Enter for new line
+          [C] 2026 Vida Technologies | Press Enter to send, Shift+Enter for new line
         </p>
       </form>
     </div>

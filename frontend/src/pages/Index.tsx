@@ -17,7 +17,7 @@ const Index = () => {
         
         {/* View Toggle */}
         <div className="px-6 py-4 border-b border-border">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-center">
             <Button
               variant={activeView === 'chat' ? 'default' : 'outline'}
               size="sm"
@@ -51,7 +51,7 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="px-6 py-4 border-t border-border text-center text-xs text-muted-foreground">
-          [C] 2026 Providentia Technologies | Providentia Enterprise Platform v3.0
+          [C] 2026 Vida Technologies | Vida Enterprise Platform v3.0
         </footer>
       </main>
     </div>
