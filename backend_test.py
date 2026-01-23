@@ -276,6 +276,7 @@ class BackendTester:
             
         try:
             dispatch_data = {
+                "report_id": self.report_id,
                 "notes": "Automated test dispatch"
             }
             
