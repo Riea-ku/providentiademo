@@ -169,8 +169,9 @@ async def generate_analytics(prediction_id: str, background_tasks: BackgroundTas
             "dispatched": False
         }
         
-        result = await db.prediction_analytics.insert_one(analytics_doc)
-        analytics_doc["_id"] = str(result.inserted_id)
+        # Make a copy to avoid ObjectId issues
+        analytics_to_store = analytics_doc.copy()
+        result = await db.prediction_analytics.insert_one(analytics_to_store)
         
         return {
             "success": True,
