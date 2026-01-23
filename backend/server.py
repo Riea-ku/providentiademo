@@ -449,8 +449,9 @@ async def dispatch_report(report_id: str, dispatch_request: Optional[DispatchReq
         work_order_data["assigned_technician_id"] = assigned_tech["id"]
         work_order_data["id"] = str(uuid.uuid4())
         
-        # Store work order
-        await db.work_orders.insert_one(work_order_data)
+        # Store work order (make copy to avoid ObjectId issues)
+        work_order_to_store = work_order_data.copy()
+        await db.work_orders.insert_one(work_order_to_store)
         
         # Create dispatch history
         dispatch_log = {
@@ -463,7 +464,9 @@ async def dispatch_report(report_id: str, dispatch_request: Optional[DispatchReq
             "notes": dispatch_request.notes if dispatch_request else None
         }
         
-        await db.dispatch_history.insert_one(dispatch_log)
+        # Store dispatch log (make copy to avoid ObjectId issues)
+        dispatch_log_to_store = dispatch_log.copy()
+        await db.dispatch_history.insert_one(dispatch_log_to_store)
         
         # Update report status
         await db.automated_reports.update_one(
