@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Build comprehensive Predictive Analytics & Automated Reporting System with: 1) UX fixes (center LLM, rename to Vida AI), 2) Backend analytics engine with Claude Sonnet 4.5, 3) Automated report generation, 4) Technician dispatch system, 5) Full prediction→analytics→report→dispatch pipeline"
+user_problem_statement: "Build comprehensive AI Analytics Simulation Feature with: 1) Interactive failure mode selector (bearing_wear, motor_overheat, pump_cavitation), 2) Real-time 6-step simulation pipeline, 3) WebSocket progress updates, 4) Complete results display with actual data, 5) Full prediction→analytics→report→inventory→dispatch→notifications flow"
 
 backend:
   - task: "Analytics Engine Implementation"
