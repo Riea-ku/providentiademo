@@ -10,6 +10,7 @@ import Farms from "./pages/Farms";
 import WorkOrders from "./pages/WorkOrders";
 import Inventory from "./pages/Inventory";
 import Analytics from "./pages/Analytics";
+import EnhancedAnalytics from "./pages/EnhancedAnalytics";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/analytics-enhanced" element={<EnhancedAnalytics />} />
           <Route path="/reports" element={<Reports />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
