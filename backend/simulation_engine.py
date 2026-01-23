@@ -243,9 +243,9 @@ class SimulationEngine:
         engine = AnalyticsEngine(simulation.prediction_data)
         analytics_package = engine.generate_analytics_package()
         
-        # Extract impact details before converting to dict
-        impact = analytics_package.impact_analysis.total_financial_impact
-        downtime = analytics_package.impact_analysis.downtime_hours
+        # Extract impact details before converting to dict (impact_analysis is a dict)
+        impact = analytics_package.impact_analysis.get('total_financial_impact', 0)
+        downtime = analytics_package.impact_analysis.get('downtime_hours', 0)
         
         analytics_data = {
             "id": f"ANALYTICS-{simulation.prediction_data['id']}",
