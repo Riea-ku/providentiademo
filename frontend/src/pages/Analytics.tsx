@@ -41,10 +41,10 @@ interface ChatMessage {
 }
 
 const STATUS_SYMBOLS = {
-  excellent: '[*]',
-  good: '[+]',
-  warning: '[!]',
-  critical: '[X]'
+  excellent: '⭐',
+  good: '✅',
+  warning: '⚠️',
+  critical: '🔴'
 };
 
 const CHART_COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
