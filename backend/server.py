@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks
+from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -11,11 +11,13 @@ from typing import List, Dict, Any, Optional
 import uuid
 from datetime import datetime
 import json
+import asyncio
 
 # Import analytics modules
 from analytics_engine import AnalyticsEngine, AnalyticsChatbot
 from report_generator import TechnicianDispatchReport, ReportDispatcher
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from simulation_engine import SimulationEngine, SimulationRequest, SimulationRun, WebSocketManager
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
