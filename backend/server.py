@@ -855,15 +855,10 @@ async def get_historical_context(entity_type: str, entity_id: str):
     """
     try:
         # Get report history
-        reports = await report_storage.get_report_history_for_entity(entity_type, entity_id)
+        reports = await report_storage_service.get_report_history_for_entity(entity_type, entity_id)
         
-        # Get event history
-        events = await event_orchestrator.get_event_history(entity_type, entity_id, days=90)
-        
-        # Get patterns if equipment
-        patterns = None
-        if entity_type == 'equipment':
-            patterns = await pattern_recognizer.get_patterns_for_equipment(entity_id)
+        # Get event history (placeholder - will implement when event_orchestrator has this method)
+        events = []
         
         return {
             "success": True,
@@ -871,8 +866,7 @@ async def get_historical_context(entity_type: str, entity_id: str):
             "entity_id": entity_id,
             "reports": reports[:10],
             "events": events[:20],
-            "patterns": patterns,
-            "summary": f"Found {len(reports)} reports and {len(events)} events for {entity_type} {entity_id}"
+            "summary": f"Found {len(reports)} reports for {entity_type} {entity_id}"
         }
         
     except Exception as e:
