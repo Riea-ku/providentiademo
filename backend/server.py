@@ -64,8 +64,13 @@ logger = logging.getLogger(__name__)
 # Initialize WebSocket Manager and Simulation Engine
 ws_manager = WebSocketManager()
 
-# Note: Historical Intelligence services will be initialized after database connection
-# See @app.on_event("startup") below
+# Global services (will be initialized on startup)
+report_storage_service = None
+event_orchestrator_service = None
+historical_chatbot_service = None
+pattern_recognizer_service = None
+intelligent_report_generator = None
+simulation_engine = None
 
 
 # ============================================================================
@@ -1075,7 +1080,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Initialize all database connections and services"""
-    global report_storage_service, event_orchestrator_service, historical_chatbot_service, pattern_recognizer_service, intelligent_report_generator
+    global report_storage_service, event_orchestrator_service, historical_chatbot_service, pattern_recognizer_service, intelligent_report_generator, simulation_engine
     
     try:
         logger.info("🚀 Starting application initialization...")
@@ -1101,6 +1106,9 @@ async def startup_event():
             postgres_pool, report_storage_service, pattern_recognizer_service, EMERGENT_LLM_KEY
         )
         
+        # Initialize Simulation Engine
+        simulation_engine = SimulationEngine(db, ws_manager)
+        
         logger.info("✅ All services initialized successfully!")
         logger.info("📊 MongoDB: Connected")
         logger.info("🐘 PostgreSQL: Connected with pgvector")
@@ -1110,6 +1118,7 @@ async def startup_event():
         logger.info("💬 Historical Chatbot: Ready")
         logger.info("📊 Pattern Recognizer: Ready")
         logger.info("📄 Intelligent Report Generator: Ready")
+        logger.info("🔬 Simulation Engine: Ready")
         
     except Exception as e:
         logger.error(f"❌ Startup failed: {e}")
