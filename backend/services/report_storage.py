@@ -106,14 +106,13 @@ class ReportStorageService:
             
             # Search by vector similarity
             async with self.pg_pool.acquire() as conn:
-                # Vector similarity search using cosine distance
+                # Vector similarity search using cosine distance (lower threshold for better recall)
                 rows = await conn.fetch("""
                     SELECT 
                         id, title, summary, content, report_type, generated_by,
                         ai_metadata, tags, reference_entities, created_at,
                         1 - (embeddings_vector <=> $1::vector) AS similarity_score
                     FROM reports
-                    WHERE 1 - (embeddings_vector <=> $1::vector) > 0.3
                     ORDER BY embeddings_vector <=> $1::vector
                     LIMIT $2
                 """, str(query_embedding), limit)
