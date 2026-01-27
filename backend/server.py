@@ -29,6 +29,7 @@ from services.event_orchestrator import EventOrchestratorService
 from services.historical_chatbot import HistoricalAwareChatbot
 from services.pattern_recognizer import PatternRecognizerService
 from services.intelligent_report_generator import IntelligentReportGenerator
+from services.ai_entity_creation import AIEntityCreationService
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -71,6 +72,7 @@ historical_chatbot_service = None
 pattern_recognizer_service = None
 intelligent_report_generator = None
 simulation_engine = None
+ai_creation_service = None
 
 
 # ============================================================================
@@ -1103,6 +1105,9 @@ async def startup_event():
         # Initialize Simulation Engine
         simulation_engine = SimulationEngine(db, ws_manager)
         
+        # Initialize AI Entity Creation Service
+        ai_creation_service = AIEntityCreationService(mongo_db)
+        
         logger.info("✅ All services initialized successfully!")
         logger.info("📊 MongoDB: Connected")
         logger.info("🐘 PostgreSQL: Connected with pgvector")
@@ -1113,6 +1118,7 @@ async def startup_event():
         logger.info("📊 Pattern Recognizer: Ready")
         logger.info("📄 Intelligent Report Generator: Ready")
         logger.info("🔬 Simulation Engine: Ready")
+        logger.info("🤖 AI Entity Creation: Ready")
         
     except Exception as e:
         logger.error(f"❌ Startup failed: {e}")
