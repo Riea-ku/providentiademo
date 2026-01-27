@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HistoricalContextPanel } from '@/components/historical/HistoricalContextPanel';
 import { HistoricalTimeline } from '@/components/historical/HistoricalTimeline';
 import { ReportDetailsDialog } from '@/components/historical/ReportDetailsDialog';
+import { HistoricalChat } from '@/components/historical/HistoricalChat';
+import { PatternsDashboard } from '@/components/historical/PatternsDashboard';
 import { historicalService, HistoricalReport } from '@/services/historicalService';
 import { 
   Search, 
@@ -239,9 +241,11 @@ const HistoricalIntelligenceDemo = () => {
 
             {/* Tabs for Different Views */}
             <Tabs defaultValue="timeline" className="w-full">
-              <TabsList className="grid w-full max-w-md grid-cols-2">
-                <TabsTrigger value="timeline">Timeline View</TabsTrigger>
-                <TabsTrigger value="context">Context Example</TabsTrigger>
+              <TabsList className="grid w-full max-w-3xl grid-cols-4">
+                <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="context">Context</TabsTrigger>
+                <TabsTrigger value="chat">AI Chat</TabsTrigger>
+                <TabsTrigger value="patterns">Patterns</TabsTrigger>
               </TabsList>
               
               <TabsContent value="timeline" className="mt-4">
@@ -264,6 +268,22 @@ const HistoricalIntelligenceDemo = () => {
                     onReportClick={handleReportClick}
                   />
                 </div>
+              </TabsContent>
+
+              <TabsContent value="chat" className="mt-4">
+                <HistoricalChat
+                  onCitationClick={async (reportId) => {
+                    const report = await historicalService.getReportById(reportId);
+                    if (report) {
+                      setSelectedReport(report);
+                      setDialogOpen(true);
+                    }
+                  }}
+                />
+              </TabsContent>
+
+              <TabsContent value="patterns" className="mt-4">
+                <PatternsDashboard />
               </TabsContent>
             </Tabs>
           </div>
