@@ -815,30 +815,31 @@ async def historical_status():
 # DISABLED TEMPORARILY - Will be re-enabled in Phase 3
 # @api_router.post("/historical/chatbot/message")
 # async def historical_chatbot_message(request: ChatMessageRequest):
-    """
-    Enhanced chatbot with complete historical awareness
-    Can reference past reports, events, and patterns
-    Provides citations to sources
-    """
-    try:
-        response = await historical_chatbot.process_message_with_history(
-            message=request.message,
-            session_id=request.session_id,
-            user_context=request.context
-        )
-        
-        return {
-            "success": True,
-            **response
-        }
-        
-    except Exception as e:
-        logger.error(f"Historical chatbot error: {str(e)}")
-        return {
-            "success": False,
-            "content": "I apologize, but I'm having trouble accessing historical data right now.",
-            "error": str(e)
-        }
+#     """
+#     Enhanced chatbot with complete historical awareness
+#     Can reference past reports, events, and patterns
+#     Provides citations to sources
+#     """
+#     try:
+#         response = await historical_chatbot.process_message_with_history(
+#             message=request.message,
+#             session_id=request.session_id,
+#             user_context=request.context
+#         )
+#         
+#         return {
+#             "success": True,
+#             **response
+#         }
+#         
+#     except Exception as e:
+#         logger.error(f"Historical chatbot error: {str(e)}")
+#         return {
+#             "success": False,
+#             "content": "I apologize, but I'm having trouble accessing historical data right now.",
+#             "error": str(e)
+#         }
+
 
 
 @api_router.post("/reports/search")
