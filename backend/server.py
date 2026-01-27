@@ -1029,6 +1029,29 @@ async def generate_intelligent_report(request: ReportGenerationRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/generated-reports")
+async def list_generated_reports(limit: int = 50):
+    """List all generated reports from MongoDB"""
+    try:
+        mongo_db = db_manager.get_mongodb()
+        reports = await mongo_db.generated_reports.find({}).sort('_id', -1).limit(limit).to_list(limit)
+        
+        # Remove _id for JSON serialization
+        for report in reports:
+            if '_id' in report:
+                report['id'] = str(report['_id'])
+                del report['_id']
+        
+        return {
+            "success": True,
+            "count": len(reports),
+            "reports": reports
+        }
+    except Exception as e:
+        logger.error(f"Error listing reports: {e}")
+        return {"success": True, "count": 0, "reports": []}
+
+
 # ============================================================================
 # PHASE 5: PATTERN RECOGNITION ⭐ NEW
 # ============================================================================
