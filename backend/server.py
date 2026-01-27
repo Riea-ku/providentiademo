@@ -9,9 +9,11 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 import uuid
-from datetime import datetime
+from uuid import uuid4
+from datetime import datetime, timezone, timedelta
 import json
 import asyncio
+import random
 
 # Import analytics modules
 from analytics_engine import AnalyticsEngine, AnalyticsChatbot
