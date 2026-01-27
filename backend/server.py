@@ -967,6 +967,201 @@ async def archive_report(report_id: str, reason: Optional[str] = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============================================================================
+# PREDICTIVE MAINTENANCE ENDPOINTS ⭐ NEW
+# ============================================================================
+
+@api_router.get("/predictive/next-failure/{equipment_id}")
+async def predict_next_failure(equipment_id: str):
+    """Predict when equipment is likely to fail next"""
+    try:
+        prediction = await predictive_scheduler.predict_next_failure(equipment_id)
+        
+        return {
+            "success": True,
+            **prediction
+        }
+        
+    except Exception as e:
+        logger.error(f"Prediction error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/predictive/maintenance-schedule")
+async def get_maintenance_schedule(equipment_ids: Optional[str] = None):
+    """Get comprehensive maintenance schedule"""
+    try:
+        eq_list = equipment_ids.split(',') if equipment_ids else None
+        schedule = await predictive_scheduler.generate_maintenance_schedule(eq_list)
+        
+        return {
+            "success": True,
+            **schedule
+        }
+        
+    except Exception as e:
+        logger.error(f"Schedule generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/predictive/cost-forecast")
+async def forecast_costs(days_ahead: int = 90):
+    """Forecast maintenance costs"""
+    try:
+        forecast = await predictive_scheduler.forecast_costs(days_ahead)
+        
+        return {
+            "success": True,
+            **forecast
+        }
+        
+    except Exception as e:
+        logger.error(f"Cost forecast error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/predictive/risk-periods")
+async def get_risk_periods(days_ahead: int = 180):
+    """Identify high-risk periods"""
+    try:
+        risk_periods = await predictive_scheduler.identify_risk_periods(days_ahead)
+        
+        return {
+            "success": True,
+            **risk_periods
+        }
+        
+    except Exception as e:
+        logger.error(f"Risk period analysis error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# EXPORT & REPORTING ENDPOINTS ⭐ NEW
+# ============================================================================
+
+@api_router.get("/reports/{report_id}/export")
+async def export_report(report_id: str, format: str = 'json'):
+    """Export a single report"""
+    try:
+        exported = await report_exporter.export_report(report_id, format)
+        
+        return {
+            "success": True,
+            **exported
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Export error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/reports/comparative")
+async def generate_comparative_report(request: Dict[str, Any]):
+    """Generate comparative report from multiple reports"""
+    try:
+        report_ids = request.get('report_ids', [])
+        
+        if not report_ids or len(report_ids) < 2:
+            raise HTTPException(status_code=400, detail="Need at least 2 report IDs")
+        
+        comparison = await report_exporter.generate_comparative_report(report_ids)
+        
+        return {
+            "success": True,
+            **comparison
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Comparative report error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/reports/trend-analysis")
+async def generate_trend_report(equipment_id: Optional[str] = None, days: int = 90):
+    """Generate trend analysis report"""
+    try:
+        trend_report = await report_exporter.generate_trend_report(equipment_id, days)
+        
+        return {
+            "success": True,
+            **trend_report
+        }
+        
+    except Exception as e:
+        logger.error(f"Trend report error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/reports/executive-summary")
+async def generate_executive_summary(days: int = 30):
+    """Generate executive summary report"""
+    try:
+        summary = await report_exporter.generate_executive_summary(days)
+        
+        return {
+            "success": True,
+            **summary
+        }
+        
+    except Exception as e:
+        logger.error(f"Executive summary error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/reports/schedule")
+async def create_report_schedule(request: Dict[str, Any]):
+    """Create automated report schedule"""
+    try:
+        report_type = request.get('report_type')
+        frequency = request.get('frequency')
+        recipients = request.get('recipients', [])
+        parameters = request.get('parameters', {})
+        
+        if not report_type or not frequency:
+            raise HTTPException(status_code=400, detail="report_type and frequency required")
+        
+        schedule_id = await automated_scheduler.create_schedule(
+            report_type, frequency, recipients, parameters
+        )
+        
+        return {
+            "success": True,
+            "schedule_id": schedule_id,
+            "message": "Report schedule created successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Schedule creation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/reports/schedules")
+async def get_report_schedules():
+    """Get all report schedules"""
+    try:
+        schedules = await automated_scheduler.schedules_collection.find(
+            {'active': True}
+        ).to_list(100)
+        
+        for schedule in schedules:
+            schedule.pop('_id', None)
+        
+        return {
+            "success": True,
+            "count": len(schedules),
+            "schedules": schedules
+        }
+        
+    except Exception as e:
+        logger.error(f"Get schedules error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
