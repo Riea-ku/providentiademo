@@ -106,6 +106,10 @@ class ReportStorageService:
         Returns:
             List of similar reports with metadata
         """
+        # If no PostgreSQL, use memory fallback
+        if self.pg_pool is None:
+            return await self._retrieve_from_memory(query, limit)
+        
         try:
             # Generate query embedding
             query_embedding = await self.embedding_service.embed_text(query)
