@@ -26,6 +26,9 @@ from db_manager import db_manager
 from embedding_service import embedding_service
 from services.report_storage import ReportStorageService
 from services.event_orchestrator import EventOrchestratorService
+from services.historical_chatbot import HistoricalAwareChatbot
+from services.pattern_recognizer import PatternRecognizerService
+from services.intelligent_report_generator import IntelligentReportGenerator
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -41,6 +44,9 @@ EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 # Global services (will be initialized on startup)
 report_storage_service = None
 event_orchestrator_service = None
+historical_chatbot_service = None
+pattern_recognizer_service = None
+intelligent_report_generator = None
 
 # Create the main app without a prefix
 app = FastAPI(title="Vida AI Predictive Analytics API", version="3.0.0")
@@ -946,7 +952,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Initialize all database connections and services"""
-    global report_storage_service, event_orchestrator_service
+    global report_storage_service, event_orchestrator_service, historical_chatbot_service, pattern_recognizer_service, intelligent_report_generator
     
     try:
         logger.info("🚀 Starting application initialization...")
@@ -956,11 +962,19 @@ async def startup_event():
         
         # Get database instances
         postgres_pool = db_manager.get_postgres_pool()
+        mongo_db = db_manager.get_mongodb()
         
         # Initialize services with both databases
         report_storage_service = ReportStorageService(postgres_pool, embedding_service)
         event_orchestrator_service = EventOrchestratorService(
             postgres_pool, embedding_service, report_storage_service
+        )
+        historical_chatbot_service = HistoricalAwareChatbot(
+            postgres_pool, embedding_service, report_storage_service, EMERGENT_LLM_KEY
+        )
+        pattern_recognizer_service = PatternRecognizerService(postgres_pool, mongo_db)
+        intelligent_report_generator = IntelligentReportGenerator(
+            postgres_pool, report_storage_service, pattern_recognizer_service, EMERGENT_LLM_KEY
         )
         
         logger.info("✅ All services initialized successfully!")
@@ -969,6 +983,9 @@ async def startup_event():
         logger.info("🧠 Embedding Service: Ready")
         logger.info("📝 Report Storage: Ready")
         logger.info("🎯 Event Orchestrator: Ready")
+        logger.info("💬 Historical Chatbot: Ready")
+        logger.info("📊 Pattern Recognizer: Ready")
+        logger.info("📄 Intelligent Report Generator: Ready")
         
     except Exception as e:
         logger.error(f"❌ Startup failed: {e}")
