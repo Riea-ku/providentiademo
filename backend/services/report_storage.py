@@ -1,5 +1,6 @@
 """
 Report Storage Service - Core service for storing and retrieving reports with AI metadata
+Now supports fallback to memory when PostgreSQL is unavailable
 """
 import logging
 from typing import Dict, List, Optional
@@ -16,6 +17,7 @@ class ReportStorageService:
     def __init__(self, postgres_pool, embedding_service):
         self.pg_pool = postgres_pool
         self.embedding_service = embedding_service
+        self._memory_reports = {}  # Fallback storage when PostgreSQL unavailable
     
     async def store_report_with_ai_metadata(self, report_data: Dict) -> str:
         """
@@ -27,6 +29,10 @@ class ReportStorageService:
         Returns:
             report_id: UUID of the stored report
         """
+        # If no PostgreSQL, store in memory
+        if self.pg_pool is None:
+            return await self._store_in_memory(report_data)
+        
         try:
             # Extract fields
             title = report_data.get('title', 'Untitled Report')
