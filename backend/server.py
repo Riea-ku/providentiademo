@@ -1142,7 +1142,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Initialize all database connections and services"""
-    global report_storage_service, event_orchestrator_service, historical_chatbot_service, pattern_recognizer_service, intelligent_report_generator, simulation_engine
+    global report_storage_service, event_orchestrator_service, historical_chatbot_service, pattern_recognizer_service, intelligent_report_generator, simulation_engine, ai_creation_service
     
     try:
         logger.info("🚀 Starting application initialization...")
@@ -1165,13 +1165,13 @@ async def startup_event():
         historical_chatbot_service.set_mongo_db(mongo_db)
         pattern_recognizer_service = PatternRecognizerService(postgres_pool, mongo_db)
         intelligent_report_generator = IntelligentReportGenerator(
-            postgres_pool, report_storage_service, pattern_recognizer_service, EMERGENT_LLM_KEY
+            postgres_pool, report_storage_service, pattern_recognizer_service, EMERGENT_LLM_KEY, mongo_db
         )
         
-        # Initialize Simulation Engine
-        simulation_engine = SimulationEngine(db, ws_manager)
+        # Initialize Simulation Engine with MongoDB for dynamic demo cases
+        simulation_engine = SimulationEngine(db, ws_manager, mongo_db)
         
-        # Initialize AI Entity Creation Service
+        # Initialize AI Entity Creation Service - MUST BE GLOBAL
         ai_creation_service = AIEntityCreationService(mongo_db)
         
         logger.info("✅ All services initialized successfully!")
