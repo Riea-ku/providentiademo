@@ -1234,26 +1234,41 @@ async def startup_event():
     try:
         logger.info("🚀 Starting application initialization...")
         
-        # Initialize both databases
+        # Initialize both databases (PostgreSQL is optional)
         await db_manager.initialize()
         
         # Get database instances
-        postgres_pool = db_manager.get_postgres_pool()
+        postgres_pool = db_manager.get_postgres_pool()  # May be None
         mongo_db = db_manager.get_mongodb()
         
-        # Initialize services with both databases
-        report_storage_service = ReportStorageService(postgres_pool, embedding_service)
-        event_orchestrator_service = EventOrchestratorService(
-            postgres_pool, embedding_service, report_storage_service
-        )
-        historical_chatbot_service = HistoricalAwareChatbot(
-            postgres_pool, embedding_service, report_storage_service, EMERGENT_LLM_KEY
-        )
-        historical_chatbot_service.set_mongo_db(mongo_db)
-        pattern_recognizer_service = PatternRecognizerService(postgres_pool, mongo_db)
-        intelligent_report_generator = IntelligentReportGenerator(
-            postgres_pool, report_storage_service, pattern_recognizer_service, EMERGENT_LLM_KEY, mongo_db
-        )
+        # Initialize services - some require PostgreSQL
+        if db_manager.is_postgres_available():
+            report_storage_service = ReportStorageService(postgres_pool, embedding_service)
+            event_orchestrator_service = EventOrchestratorService(
+                postgres_pool, embedding_service, report_storage_service
+            )
+            historical_chatbot_service = HistoricalAwareChatbot(
+                postgres_pool, embedding_service, report_storage_service, EMERGENT_LLM_KEY
+            )
+            historical_chatbot_service.set_mongo_db(mongo_db)
+            pattern_recognizer_service = PatternRecognizerService(postgres_pool, mongo_db)
+            intelligent_report_generator = IntelligentReportGenerator(
+                postgres_pool, report_storage_service, pattern_recognizer_service, EMERGENT_LLM_KEY, mongo_db
+            )
+            logger.info("🐘 PostgreSQL: Connected with pgvector")
+        else:
+            # Create mock services that work without PostgreSQL
+            report_storage_service = None
+            event_orchestrator_service = None
+            historical_chatbot_service = HistoricalAwareChatbot(
+                None, embedding_service, None, EMERGENT_LLM_KEY
+            )
+            historical_chatbot_service.set_mongo_db(mongo_db)
+            pattern_recognizer_service = PatternRecognizerService(None, mongo_db)
+            intelligent_report_generator = IntelligentReportGenerator(
+                None, None, pattern_recognizer_service, EMERGENT_LLM_KEY, mongo_db
+            )
+            logger.info("⚠️ PostgreSQL: Unavailable (some features limited)")
         
         # Initialize Simulation Engine with MongoDB for dynamic demo cases
         simulation_engine = SimulationEngine(db, ws_manager, mongo_db)
@@ -1266,10 +1281,9 @@ async def startup_event():
         
         logger.info("✅ All services initialized successfully!")
         logger.info("📊 MongoDB: Connected")
-        logger.info("🐘 PostgreSQL: Connected with pgvector")
         logger.info("🧠 Embedding Service: Ready")
-        logger.info("📝 Report Storage: Ready")
-        logger.info("🎯 Event Orchestrator: Ready")
+        logger.info("📝 Report Storage: " + ("Ready" if report_storage_service else "Limited (no PostgreSQL)"))
+        logger.info("🎯 Event Orchestrator: " + ("Ready" if event_orchestrator_service else "Limited (no PostgreSQL)"))
         logger.info("💬 Historical Chatbot: Ready")
         logger.info("📊 Pattern Recognizer: Ready")
         logger.info("📄 Intelligent Report Generator: Ready")
