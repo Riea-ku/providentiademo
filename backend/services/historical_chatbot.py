@@ -397,6 +397,10 @@ Always provide helpful, accurate responses based on the historical data availabl
         historical_context: Dict
     ):
         """Store conversation in database for learning"""
+        # Skip if no PostgreSQL
+        if self.pg_pool is None:
+            return
+        
         try:
             # Generate embeddings
             message_embedding = await self.embedding_service.embed_text(message)
