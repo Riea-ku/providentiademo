@@ -58,19 +58,8 @@ logger = logging.getLogger(__name__)
 # Initialize WebSocket Manager and Simulation Engine
 ws_manager = WebSocketManager()
 
-# Initialize Historical Intelligence Services
-report_storage = ReportStorageService(db, EMERGENT_LLM_KEY)
-event_orchestrator = GlobalEventOrchestrator(db, report_storage)
-historical_chatbot = HistoricalAwareChatbot(db, EMERGENT_LLM_KEY, report_storage, event_orchestrator)
-pattern_recognizer = HistoricalPatternRecognizer(db)
-
-# Initialize Enhanced Simulation Engine with Historical Integration
-simulation_engine = EnhancedSimulationEngine(db, ws_manager, event_orchestrator, report_storage)
-
-# Initialize Predictive Maintenance and Export Services
-predictive_scheduler = PredictiveMaintenanceScheduler(db, pattern_recognizer)
-report_exporter = ReportExporter(db, pattern_recognizer)
-automated_scheduler = AutomatedReportScheduler(db, report_exporter)
+# Note: Historical Intelligence services will be initialized after database connection
+# See @app.on_event("startup") below
 
 
 # ============================================================================
