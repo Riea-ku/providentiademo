@@ -826,7 +826,7 @@ async def search_reports(request: Dict[str, Any]):
             context['date_range'] = filters['date_range']
         
         # Search reports
-        reports = await report_storage.retrieve_similar_reports(
+        reports = await report_storage_service.retrieve_similar_reports(
             query=query,
             context=context,
             limit=limit
