@@ -9,8 +9,9 @@ import Equipment from "./pages/Equipment";
 import Farms from "./pages/Farms";
 import WorkOrders from "./pages/WorkOrders";
 import Inventory from "./pages/Inventory";
-import Analytics from "./pages/Analytics";
-import EnhancedAnalytics from "./pages/EnhancedAnalytics";
+import { lazy, Suspense } from "react";
+const Analytics = lazy(() => import("./pages/Analytics"));
+const EnhancedAnalytics = lazy(() => import("./pages/EnhancedAnalytics"));
 import AIAnalyticsSimulation from "./pages/AIAnalyticsSimulation";
 import HistoricalIntelligence from "./pages/HistoricalIntelligence";
 import ReportHistory from "./pages/ReportHistory";
@@ -32,8 +33,8 @@ const App = () => (
           <Route path="/farms" element={<Farms />} />
           <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/inventory" element={<Inventory />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/analytics-enhanced" element={<EnhancedAnalytics />} />
+          <Route path="/analytics" element={<Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}><Analytics /></Suspense>} />
+          <Route path="/analytics-enhanced" element={<Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}><EnhancedAnalytics /></Suspense>} />
           <Route path="/ai-analytics-simulation" element={<AIAnalyticsSimulation />} />
           <Route path="/historical-intelligence" element={<HistoricalIntelligence />} />
           <Route path="/report-history" element={<ReportHistory />} />
