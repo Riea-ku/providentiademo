@@ -1,5 +1,6 @@
 """
 Pattern Recognition Service - Identifies patterns in historical data
+Now supports MongoDB-only mode when PostgreSQL is unavailable
 """
 import logging
 from typing import Dict, List, Optional
@@ -19,6 +20,10 @@ class PatternRecognizerService:
     
     async def analyze_system_patterns(self, time_period: str = 'all') -> Dict:
         """Analyze patterns across all historical data"""
+        
+        # If no PostgreSQL, use MongoDB data
+        if self.pg_pool is None:
+            return await self._analyze_mongo_patterns(time_period)
         
         try:
             # Calculate time range
@@ -55,8 +60,44 @@ class PatternRecognizerService:
             logger.error(f"Pattern analysis error: {e}")
             return {'error': str(e)}
     
+    async def _analyze_mongo_patterns(self, time_period: str) -> Dict:
+        """Analyze patterns from MongoDB when PostgreSQL unavailable"""
+        try:
+            # Get work orders and predictions from MongoDB
+            work_orders = await self.mongo_db.work_orders.find({}, {"_id": 0}).to_list(500)
+            predictions = await self.mongo_db.demo_predictions.find({}, {"_id": 0}).to_list(100)
+            
+            # Analyze failure patterns from predictions
+            failure_types = [p.get('failure_mode', 'unknown') for p in predictions]
+            failure_counts = Counter(failure_types)
+            
+            return {
+                'time_period': time_period,
+                'total_reports': len(work_orders) + len(predictions),
+                'failure_patterns': {
+                    'most_common': [{'type': k, 'count': v} for k, v in failure_counts.most_common(5)],
+                    'total_failures': len(failure_types),
+                    'unique_types': len(failure_counts)
+                },
+                'tag_patterns': {'most_common_tags': [], 'total_tags': 0},
+                'temporal_patterns': {},
+                'insights': [f"Found {len(predictions)} predictions across {len(failure_counts)} failure types"]
+            }
+        except Exception as e:
+            logger.error(f"MongoDB pattern analysis error: {e}")
+            return {'error': str(e), 'message': 'Pattern analysis unavailable'}
+    
     async def get_patterns_for_equipment(self, equipment_id: str) -> Dict:
         """Get historical patterns for specific equipment"""
+        
+        # If no PostgreSQL, return limited data
+        if self.pg_pool is None:
+            return {
+                'equipment_id': equipment_id,
+                'report_count': 0,
+                'message': 'Pattern analysis limited (PostgreSQL unavailable)',
+                'risk_level': 'unknown'
+            }
         
         try:
             # Get equipment reports
