@@ -88,7 +88,7 @@ class HistoricalAwareChatbot:
         }
         
         # Get real-time data from MongoDB based on query
-        if self.mongo_db:
+        if self.mongo_db is not None:
             # Check for inventory queries
             if any(word in query_lower for word in ['inventory', 'stock', 'parts', 'low', 'reorder']):
                 context['real_time_data']['inventory'] = await self._get_inventory_data()
