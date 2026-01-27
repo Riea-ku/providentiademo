@@ -767,10 +767,6 @@ async def simulate_prediction():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Include the router in the main app
-app.include_router(api_router)
-
-
 # ============================================================================
 # HISTORICAL INTELLIGENCE ENDPOINTS ⭐ NEW
 # ============================================================================
