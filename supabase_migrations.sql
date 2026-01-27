@@ -1,7 +1,7 @@
 -- ============================================================================
 -- VIDA AI PREDICTIVE ANALYTICS SYSTEM
 -- Supabase Table Migrations
--- Run this in your Supabase SQL Editor
+-- Supabase SQL Editor
 -- ============================================================================
 
 -- 1. CREATE prediction_analytics TABLE
