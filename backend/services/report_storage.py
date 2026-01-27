@@ -262,3 +262,42 @@ class ReportStorageService:
             tags.add('analytics')
         
         return list(tags)[:10]  # Max 10 tags
+    
+    # ============ Memory Fallback Methods (when PostgreSQL unavailable) ============
+    
+    async def _store_in_memory(self, report_data: Dict) -> str:
+        """Store report in memory when PostgreSQL unavailable"""
+        report_id = str(uuid4())
+        self._memory_reports[report_id] = {
+            'id': report_id,
+            'title': report_data.get('title', 'Untitled Report'),
+            'summary': report_data.get('summary', ''),
+            'content': report_data.get('content', {}),
+            'report_type': report_data.get('report_type', 'general'),
+            'generated_by': report_data.get('generated_by', 'system'),
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'tags': self._extract_tags(
+                report_data.get('title', ''),
+                report_data.get('summary', ''),
+                report_data.get('content', {})
+            )
+        }
+        logger.info(f"✅ Stored report in memory: {report_id}")
+        return report_id
+    
+    async def _retrieve_from_memory(self, query: str, limit: int = 10) -> List[Dict]:
+        """Retrieve reports from memory (simple keyword matching)"""
+        query_lower = query.lower()
+        results = []
+        
+        for report_id, report in self._memory_reports.items():
+            # Simple keyword matching
+            text = f"{report['title']} {report['summary']}".lower()
+            if any(word in text for word in query_lower.split()):
+                results.append({
+                    **report,
+                    'similarity_score': 0.5  # Placeholder score
+                })
+        
+        return results[:limit]
+
