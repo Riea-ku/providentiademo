@@ -1141,6 +1141,75 @@ app.add_middleware(
 # STARTUP & SHUTDOWN
 # ============================================================================
 
+# 20 Demo Prediction Cases for AI Analytics Simulation
+DEMO_PREDICTION_CASES = [
+    {"failure_mode": "bearing_wear", "equipment": "Solar Pump A", "severity": "critical", "confidence": 92.5, "health": 65, "ttf_hours": 72, "cost": 3500, "description": "Excessive bearing wear detected - high vibration and temperature"},
+    {"failure_mode": "motor_overheat", "equipment": "Motor Unit B", "severity": "high", "confidence": 88.3, "health": 58, "ttf_hours": 48, "cost": 5200, "description": "Motor temperature exceeding safe limits - cooling system failure"},
+    {"failure_mode": "pump_cavitation", "equipment": "Irrigation Pump C", "severity": "medium", "confidence": 85.7, "health": 70, "ttf_hours": 120, "cost": 2800, "description": "Cavitation detected - low suction pressure and irregular flow"},
+    {"failure_mode": "seal_degradation", "equipment": "Hydraulic System D", "severity": "high", "confidence": 90.1, "health": 55, "ttf_hours": 36, "cost": 4100, "description": "Hydraulic seal degradation causing pressure loss"},
+    {"failure_mode": "belt_wear", "equipment": "Harvester E", "severity": "medium", "confidence": 78.4, "health": 72, "ttf_hours": 200, "cost": 1500, "description": "Drive belt showing signs of wear and cracking"},
+    {"failure_mode": "gearbox_failure", "equipment": "Tractor F", "severity": "critical", "confidence": 94.2, "health": 45, "ttf_hours": 24, "cost": 8500, "description": "Gearbox grinding detected - imminent failure risk"},
+    {"failure_mode": "filter_clogged", "equipment": "HVAC System G", "severity": "low", "confidence": 82.0, "health": 78, "ttf_hours": 336, "cost": 500, "description": "Air filter approaching replacement threshold"},
+    {"failure_mode": "electrical_fault", "equipment": "Control Panel H", "severity": "high", "confidence": 87.9, "health": 60, "ttf_hours": 60, "cost": 3200, "description": "Intermittent electrical faults detected in control circuits"},
+    {"failure_mode": "compressor_wear", "equipment": "Compressor I", "severity": "medium", "confidence": 83.5, "health": 68, "ttf_hours": 144, "cost": 4500, "description": "Compressor showing reduced efficiency and increased noise"},
+    {"failure_mode": "valve_leak", "equipment": "Irrigation Valve J", "severity": "medium", "confidence": 79.8, "health": 71, "ttf_hours": 180, "cost": 1200, "description": "Minor valve leak detected affecting water pressure"},
+    {"failure_mode": "sensor_drift", "equipment": "Monitoring Station K", "severity": "low", "confidence": 75.3, "health": 82, "ttf_hours": 500, "cost": 800, "description": "Temperature sensor showing calibration drift"},
+    {"failure_mode": "corrosion", "equipment": "Storage Tank L", "severity": "high", "confidence": 89.6, "health": 52, "ttf_hours": 96, "cost": 6000, "description": "Corrosion detected at tank joints - structural concern"},
+    {"failure_mode": "lubrication_fail", "equipment": "Conveyor M", "severity": "medium", "confidence": 84.1, "health": 66, "ttf_hours": 168, "cost": 2200, "description": "Lubrication system not delivering adequate oil flow"},
+    {"failure_mode": "fan_imbalance", "equipment": "Cooling Fan N", "severity": "low", "confidence": 77.0, "health": 75, "ttf_hours": 240, "cost": 900, "description": "Fan blade imbalance causing minor vibration"},
+    {"failure_mode": "pressure_drop", "equipment": "Pneumatic System O", "severity": "medium", "confidence": 81.2, "health": 69, "ttf_hours": 192, "cost": 1800, "description": "Gradual pressure drop indicating air leak in system"},
+    {"failure_mode": "shaft_misalignment", "equipment": "Generator P", "severity": "high", "confidence": 91.4, "health": 54, "ttf_hours": 48, "cost": 5500, "description": "Shaft misalignment causing excessive vibration"},
+    {"failure_mode": "coolant_leak", "equipment": "Engine Q", "severity": "critical", "confidence": 93.8, "health": 48, "ttf_hours": 18, "cost": 7200, "description": "Coolant leak detected - risk of engine overheat"},
+    {"failure_mode": "battery_degradation", "equipment": "Power Backup R", "severity": "medium", "confidence": 80.5, "health": 67, "ttf_hours": 720, "cost": 2800, "description": "Battery capacity declining below optimal levels"},
+    {"failure_mode": "coupling_wear", "equipment": "Pump Coupling S", "severity": "high", "confidence": 86.7, "health": 58, "ttf_hours": 72, "cost": 3800, "description": "Flexible coupling showing signs of wear"},
+    {"failure_mode": "vibration_anomaly", "equipment": "Centrifuge T", "severity": "critical", "confidence": 95.1, "health": 42, "ttf_hours": 12, "cost": 9500, "description": "Critical vibration anomaly detected - immediate attention required"}
+]
+
+async def seed_demo_predictions():
+    """Seed the database with 20 demo prediction cases for AI Analytics simulation"""
+    try:
+        # Check if predictions already exist
+        existing_count = await db.demo_predictions.count_documents({})
+        if existing_count >= 20:
+            logger.info(f"✅ Demo predictions already seeded ({existing_count} cases)")
+            return
+        
+        # Clear and reseed
+        await db.demo_predictions.delete_many({})
+        
+        demo_docs = []
+        for i, case in enumerate(DEMO_PREDICTION_CASES):
+            doc = {
+                "id": f"DEMO-PRED-{i+1:03d}",
+                "failure_mode": case["failure_mode"],
+                "equipment_id": f"eq-demo-{i+1:03d}",
+                "equipment_name": case["equipment"],
+                "predicted_failure": case["failure_mode"].replace("_", " ").title(),
+                "severity": case["severity"],
+                "confidence_score": case["confidence"],
+                "health_score": case["health"],
+                "time_to_failure_hours": case["ttf_hours"],
+                "estimated_cost": case["cost"],
+                "description": case["description"],
+                "maintenance_urgency": "critical" if case["severity"] == "critical" else "high" if case["severity"] == "high" else "medium",
+                "sensor_data": {
+                    "motor_temp": random.randint(60, 110),
+                    "vibration": round(random.uniform(5, 20), 1),
+                    "power_output": random.randint(50, 95),
+                    "flow_rate": random.randint(30, 60),
+                    "noise_level": random.randint(50, 100)
+                },
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            demo_docs.append(doc)
+        
+        await db.demo_predictions.insert_many(demo_docs)
+        logger.info(f"✅ Seeded {len(demo_docs)} demo prediction cases")
+        
+    except Exception as e:
+        logger.error(f"Failed to seed demo predictions: {e}")
+
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize all database connections and services"""
