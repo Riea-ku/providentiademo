@@ -46,6 +46,12 @@ class DatabaseManager:
     
     async def connect_postgresql(self):
         """Connect to PostgreSQL with connection pooling (optional)"""
+        if not ASYNCPG_AVAILABLE:
+            logger.info("⚠️ asyncpg not installed - PostgreSQL disabled")
+            self.postgres_available = False
+            self.postgres_pool = None
+            return None
+        
         try:
             postgres_url = os.environ.get(
                 'POSTGRES_URL',
