@@ -1056,6 +1056,72 @@ async def get_pattern_insights():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============================================================================
+# AI ENTITY CREATION ENDPOINTS ⭐ NEW
+# ============================================================================
+
+class AICreationStartRequest(BaseModel):
+    entity_type: str
+    subtype: Optional[str] = None
+
+
+class AICreationAnswerRequest(BaseModel):
+    session_id: str
+    answer: Any
+
+
+@api_router.post("/ai-creation/start")
+async def start_ai_creation(request: AICreationStartRequest):
+    """Start AI conversational entity creation"""
+    try:
+        session_id = str(uuid4())
+        response = ai_creation_service.start_creation_conversation(
+            session_id=session_id,
+            entity_type=request.entity_type,
+            subtype=request.subtype
+        )
+        
+        return {
+            "success": True,
+            "session_id": session_id,
+            **response
+        }
+        
+    except Exception as e:
+        logger.error(f"AI creation start error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/ai-creation/answer")
+async def process_ai_answer(request: AICreationAnswerRequest):
+    """Process user answer in AI creation conversation"""
+    try:
+        response = ai_creation_service.process_answer(
+            session_id=request.session_id,
+            answer=request.answer
+        )
+        
+        return {
+            "success": True,
+            **response
+        }
+        
+    except Exception as e:
+        logger.error(f"AI creation answer error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/ai-creation/cancel/{session_id}")
+async def cancel_ai_creation(session_id: str):
+    """Cancel AI creation conversation"""
+    try:
+        response = ai_creation_service.cancel_conversation(session_id)
+        return {"success": True, **response}
+    except Exception as e:
+        logger.error(f"AI creation cancel error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
