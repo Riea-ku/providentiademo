@@ -12,6 +12,8 @@ import Inventory from "./pages/Inventory";
 import Analytics from "./pages/Analytics";
 import EnhancedAnalytics from "./pages/EnhancedAnalytics";
 import AIAnalyticsSimulation from "./pages/AIAnalyticsSimulation";
+import HistoricalIntelligence from "./pages/HistoricalIntelligence";
+import ReportHistory from "./pages/ReportHistory";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
