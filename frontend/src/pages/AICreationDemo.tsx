@@ -61,13 +61,13 @@ const AICreationDemo = () => {
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
             {/* Hero */}
-            <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
+            <Card className="border-2 border-teal-400 bg-gradient-to-br from-teal-600 to-teal-800 dark:from-teal-700 dark:to-teal-900 text-white">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Sparkles className="h-6 w-6 text-purple-600" />
+                <CardTitle className="flex items-center gap-2 text-2xl text-white">
+                  <Sparkles className="h-6 w-6 text-teal-200" />
                   No More Forms - Just Conversations
                 </CardTitle>
-                <CardDescription className="text-base">
+                <CardDescription className="text-base text-teal-100">
                   Click any "Add" button below and have a natural conversation with AI. 
                   It asks intelligent questions, suggests optimal configurations, and creates everything automatically.
                 </CardDescription>
