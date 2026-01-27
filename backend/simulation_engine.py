@@ -135,7 +135,7 @@ class SimulationEngine:
     def __init__(self, db_client, websocket_manager, mongo_db=None):
         self.db = db_client
         self.ws_manager = websocket_manager
-        self.mongo_db = mongo_db or db_client  # Fallback to db_client
+        self.mongo_db = mongo_db if mongo_db is not None else db_client  # Proper None check for MongoDB
         
     async def run_simulation(self, request: SimulationRequest) -> SimulationRun:
         """Execute full simulation cycle"""
