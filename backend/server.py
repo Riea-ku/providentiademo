@@ -768,6 +768,196 @@ async def simulate_prediction():
 # Include the router in the main app
 app.include_router(api_router)
 
+
+# ============================================================================
+# HISTORICAL INTELLIGENCE ENDPOINTS ⭐ NEW
+# ============================================================================
+
+@api_router.post("/historical/chatbot/message")
+async def historical_chatbot_message(request: ChatMessageRequest):
+    """
+    Enhanced chatbot with complete historical awareness
+    Can reference past reports, events, and patterns
+    Provides citations to sources
+    """
+    try:
+        response = await historical_chatbot.process_message_with_history(
+            message=request.message,
+            session_id=request.session_id,
+            user_context=request.context
+        )
+        
+        return {
+            "success": True,
+            **response
+        }
+        
+    except Exception as e:
+        logger.error(f"Historical chatbot error: {str(e)}")
+        return {
+            "success": False,
+            "content": "I apologize, but I'm having trouble accessing historical data right now.",
+            "error": str(e)
+        }
+
+
+@api_router.post("/reports/search")
+async def search_reports(request: Dict[str, Any]):
+    """
+    AI-powered semantic search across all historical reports
+    
+    Body:
+        query: Search query string
+        filters: Optional filters (date range, equipment, etc.)
+        limit: Max results (default 10)
+    """
+    try:
+        query = request.get('query', '')
+        filters = request.get('filters', {})
+        limit = request.get('limit', 10)
+        
+        # Convert filters to context
+        context = {}
+        if filters.get('equipment_id'):
+            context['equipment_id'] = filters['equipment_id']
+        if filters.get('date_range'):
+            context['date_range'] = filters['date_range']
+        
+        # Search reports
+        reports = await report_storage.retrieve_similar_reports(
+            query=query,
+            context=context,
+            limit=limit
+        )
+        
+        return {
+            "success": True,
+            "query": query,
+            "count": len(reports),
+            "reports": reports
+        }
+        
+    except Exception as e:
+        logger.error(f"Report search error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/historical/context/{entity_type}/{entity_id}")
+async def get_historical_context(entity_type: str, entity_id: str):
+    """
+    Get historical context for an entity (equipment, prediction, etc.)
+    
+    Args:
+        entity_type: Type of entity (equipment, prediction, work_order, technician)
+        entity_id: ID of the entity
+    """
+    try:
+        # Get report history
+        reports = await report_storage.get_report_history_for_entity(entity_type, entity_id)
+        
+        # Get event history
+        events = await event_orchestrator.get_event_history(entity_type, entity_id, days=90)
+        
+        # Get patterns if equipment
+        patterns = None
+        if entity_type == 'equipment':
+            patterns = await pattern_recognizer.get_patterns_for_equipment(entity_id)
+        
+        return {
+            "success": True,
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "reports": reports[:10],
+            "events": events[:20],
+            "patterns": patterns,
+            "summary": f"Found {len(reports)} reports and {len(events)} events for {entity_type} {entity_id}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Historical context error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/patterns/analyze")
+async def analyze_patterns(time_period: str = '365d'):
+    """
+    Analyze patterns across all historical data
+    
+    Args:
+        time_period: Time period to analyze ('30d', '90d', '365d', 'all')
+    """
+    try:
+        patterns = await pattern_recognizer.analyze_system_patterns(time_period)
+        
+        return {
+            "success": True,
+            **patterns
+        }
+        
+    except Exception as e:
+        logger.error(f"Pattern analysis error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/patterns/equipment/{equipment_id}")
+async def get_equipment_patterns(equipment_id: str):
+    """Get historical patterns for specific equipment"""
+    try:
+        patterns = await pattern_recognizer.get_patterns_for_equipment(equipment_id)
+        
+        return {
+            "success": True,
+            **patterns
+        }
+        
+    except Exception as e:
+        logger.error(f"Equipment patterns error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/historical/events")
+async def get_event_history(
+    entity_type: Optional[str] = None,
+    entity_id: Optional[str] = None,
+    days: int = 30
+):
+    """Get historical events with optional filtering"""
+    try:
+        events = await event_orchestrator.get_event_history(entity_type, entity_id, days)
+        
+        return {
+            "success": True,
+            "count": len(events),
+            "events": events
+        }
+        
+    except Exception as e:
+        logger.error(f"Event history error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/reports/{report_id}/archive")
+async def archive_report(report_id: str, reason: Optional[str] = None):
+    """Archive a report (keep in history but mark as archived)"""
+    try:
+        success = await report_storage.archive_report(report_id, reason)
+        
+        if success:
+            return {
+                "success": True,
+                "message": "Report archived successfully",
+                "report_id": report_id
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Report not found")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Archive error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
