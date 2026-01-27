@@ -4,11 +4,18 @@ PostgreSQL is optional - app can work with MongoDB only
 """
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
-import asyncpg
 from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Try to import asyncpg, but make it optional
+try:
+    import asyncpg
+    ASYNCPG_AVAILABLE = True
+except ImportError:
+    ASYNCPG_AVAILABLE = False
+    logger.info("asyncpg not installed - PostgreSQL features disabled")
 
 
 class DatabaseManager:
