@@ -913,7 +913,22 @@ async def get_historical_context(entity_type: str, entity_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.get("/patterns/analyze")
+# DISABLED TEMPORARILY - Pattern recognition will be implemented in Phase 5
+# @api_router.get("/patterns/analyze")
+# @api_router.get("/patterns/equipment/{equipment_id}")
+# @api_router.get("/historical/events")
+# @api_router.post("/reports/{report_id}/archive")
+# @api_router.get("/predictive/next-failure/{equipment_id}")
+# @api_router.get("/predictive/maintenance-schedule")
+# @api_router.get("/predictive/cost-forecast")
+# @api_router.get("/predictive/risk-periods")
+# @api_router.get("/reports/{report_id}/export")
+# @api_router.post("/reports/comparative")
+# @api_router.get("/reports/trend-analysis")
+# @api_router.get("/reports/executive-summary")
+# @api_router.post("/reports/schedule")
+# @api_router.get("/reports/schedules")
+
 async def analyze_patterns(time_period: str = '365d'):
     """
     Analyze patterns across all historical data
