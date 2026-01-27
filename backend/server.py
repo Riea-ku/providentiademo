@@ -925,6 +925,10 @@ async def get_historical_context(entity_type: str, entity_id: str):
 # @api_router.post("/reports/schedule")
 # @api_router.get("/reports/schedules")
 
+
+# Include the router in the main app
+app.include_router(api_router)
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
