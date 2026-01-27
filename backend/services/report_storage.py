@@ -116,7 +116,7 @@ class ReportStorageService:
                     WHERE 1 - (embeddings_vector <=> $1::vector) > 0.5
                     ORDER BY embeddings_vector <=> $1::vector
                     LIMIT $2
-                """, query_embedding, limit)
+                """, str(query_embedding), limit)
             
             # Convert to dict and enrich
             results = []
