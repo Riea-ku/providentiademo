@@ -109,13 +109,14 @@ class HistoricalAwareChatbot:
             if any(word in query_lower for word in ['predict', 'forecast', 'failure', 'alert']):
                 context['real_time_data']['predictions'] = await self._get_predictions()
         
-        # Search reports semantically
-        reports = await self.report_storage.retrieve_similar_reports(
-            query=query,
-            context=user_context,
-            limit=5
-        )
-        context['relevant_reports'] = reports
+        # Search reports semantically (if report_storage is available)
+        if self.report_storage is not None:
+            reports = await self.report_storage.retrieve_similar_reports(
+                query=query,
+                context=user_context,
+                limit=5
+            )
+            context['relevant_reports'] = reports
         
         return context
     
