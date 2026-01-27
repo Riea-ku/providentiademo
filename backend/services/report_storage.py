@@ -113,7 +113,7 @@ class ReportStorageService:
                         ai_metadata, tags, reference_entities, created_at,
                         1 - (embeddings_vector <=> $1::vector) AS similarity_score
                     FROM reports
-                    WHERE 1 - (embeddings_vector <=> $1::vector) > 0.5
+                    WHERE 1 - (embeddings_vector <=> $1::vector) > 0.3
                     ORDER BY embeddings_vector <=> $1::vector
                     LIMIT $2
                 """, str(query_embedding), limit)
