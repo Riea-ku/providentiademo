@@ -309,15 +309,19 @@ class IntelligentReportGenerator:
     
     async def _get_historical_context(self, report_type: str, current_data: Dict) -> Dict:
         """Get historical context for comparison"""
-        query = f"{report_type} {current_data.get('equipment', '')} {current_data.get('description', '')}"
-        
-        similar_reports = await self.report_storage.retrieve_similar_reports(
-            query=query,
-            limit=5
-        )
-        
+        similar_reports = []
         patterns = {}
-        if current_data.get('equipment_id'):
+        
+        # Get similar reports if report_storage is available
+        if self.report_storage is not None:
+            query = f"{report_type} {current_data.get('equipment', '')} {current_data.get('description', '')}"
+            similar_reports = await self.report_storage.retrieve_similar_reports(
+                query=query,
+                limit=5
+            )
+        
+        # Get patterns if pattern_recognizer is available
+        if self.pattern_recognizer is not None and current_data.get('equipment_id'):
             patterns = await self.pattern_recognizer.get_patterns_for_equipment(
                 current_data['equipment_id']
             )
