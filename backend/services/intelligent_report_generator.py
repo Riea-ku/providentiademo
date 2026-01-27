@@ -218,8 +218,17 @@ class IntelligentReportGenerator:
                 'reference_entities': self._extract_entities(processed_data)
             }
             
-            # 5. Store report
-            report_id = await self.report_storage.store_report_with_ai_metadata(report_data)
+            # 5. Store report (if storage available) or return temp ID
+            if self.report_storage is not None:
+                report_id = await self.report_storage.store_report_with_ai_metadata(report_data)
+            else:
+                # Generate temp report ID and return the full report
+                from uuid import uuid4
+                report_id = str(uuid4())
+                report_data['id'] = report_id
+                # Store in memory via MongoDB instead
+                if self.mongo_db is not None:
+                    await self.mongo_db.generated_reports.insert_one({**report_data, '_id': report_id})
             
             logger.info(f"Generated {report_type} report: {report_id}")
             return report_id
