@@ -938,11 +938,11 @@ Kubernetes Cluster
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=vida_ai_db
 EMERGENT_LLM_KEY=sk-emergent-...
-APP_URL=https://[domain].preview.emergentagent.com
+APP_URL=https://failure-sim-app.preview.emergentagent.com
 INTEGRATION_PROXY_URL=https://integrations.emergentagent.com
 
 # Frontend environment (.env)
-VITE_BACKEND_URL=https://[domain].preview.emergentagent.com
+VITE_BACKEND_URL=https://failure-sim-app.preview.emergentagent.com
 VITE_SUPABASE_URL=https://placeholder.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=placeholder_key
 ```
