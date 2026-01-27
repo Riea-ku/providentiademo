@@ -1,10 +1,11 @@
 """
 AI Analytics Simulation Engine
 Handles 6-step simulation workflow with real-time progress tracking
+Now supports 20+ dynamic demo cases from database
 """
 import asyncio
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field
 import random
@@ -31,7 +32,8 @@ class SimulationRun(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     failure_mode: str
     equipment_id: str
-    started_at: str = Field(default_factory=lambda: datetime.now().isoformat())
+    prediction_id: Optional[str] = None
+    started_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     completed_at: Optional[str] = None
     status: str = "running"  # running, complete, error
     current_step: int = 0
@@ -47,13 +49,14 @@ class SimulationRun(BaseModel):
 
 
 class SimulationRequest(BaseModel):
-    failure_mode: str  # bearing_wear, motor_overheat, pump_cavitation
+    failure_mode: str  # e.g., bearing_wear, motor_overheat, or prediction_id like DEMO-PRED-001
     equipment_id: str = "pump-001"
     run_full_cycle: bool = True
+    prediction_id: Optional[str] = None  # If provided, load from demo_predictions
 
 
 # ============================================================================
-# FAILURE MODE TEMPLATES
+# FALLBACK FAILURE MODE TEMPLATES (used if no demo prediction found)
 # ============================================================================
 
 FAILURE_MODE_TEMPLATES = {
@@ -129,9 +132,10 @@ class SimulationEngine:
     6. Send notifications & finalize
     """
     
-    def __init__(self, db_client, websocket_manager):
+    def __init__(self, db_client, websocket_manager, mongo_db=None):
         self.db = db_client
         self.ws_manager = websocket_manager
+        self.mongo_db = mongo_db or db_client  # Fallback to db_client
         
     async def run_simulation(self, request: SimulationRequest) -> SimulationRun:
         """Execute full simulation cycle"""
@@ -140,6 +144,7 @@ class SimulationEngine:
         simulation = SimulationRun(
             failure_mode=request.failure_mode,
             equipment_id=request.equipment_id,
+            prediction_id=request.prediction_id,
             steps=[
                 SimulationStep(step_number=1, step_name="AI Generates Failure Prediction"),
                 SimulationStep(step_number=2, step_name="Analytics & Impact Assessment"),
@@ -155,7 +160,7 @@ class SimulationEngine:
         
         try:
             # Execute each step
-            await self.step_1_generate_prediction(simulation, request.failure_mode)
+            await self.step_1_generate_prediction(simulation, request)
             await self.step_2_run_analytics(simulation)
             await self.step_3_generate_report(simulation)
             await self.step_4_check_inventory(simulation)
@@ -164,7 +169,7 @@ class SimulationEngine:
             
             # Mark as complete
             simulation.status = "complete"
-            simulation.completed_at = datetime.now().isoformat()
+            simulation.completed_at = datetime.now(timezone.utc).isoformat()
             
             # Update in database
             await self.db.ai_simulations.update_one(
@@ -180,7 +185,7 @@ class SimulationEngine:
             
         except Exception as e:
             simulation.status = "error"
-            simulation.completed_at = datetime.now().isoformat()
+            simulation.completed_at = datetime.now(timezone.utc).isoformat()
             await self.db.ai_simulations.update_one(
                 {"id": simulation.id},
                 {"$set": simulation.dict()}
@@ -189,51 +194,102 @@ class SimulationEngine:
         
         return simulation
     
-    async def step_1_generate_prediction(self, simulation: SimulationRun, failure_mode: str):
-        """Step 1: Generate synthetic prediction based on failure mode"""
+    async def _load_demo_prediction(self, prediction_id: str) -> Optional[Dict]:
+        """Load a demo prediction from the database"""
+        try:
+            # Try by ID first
+            prediction = await self.mongo_db.demo_predictions.find_one(
+                {"id": prediction_id}, {"_id": 0}
+            )
+            if prediction:
+                return prediction
+            
+            # Try by failure_mode
+            prediction = await self.mongo_db.demo_predictions.find_one(
+                {"failure_mode": prediction_id}, {"_id": 0}
+            )
+            return prediction
+        except Exception as e:
+            print(f"Error loading demo prediction: {e}")
+            return None
+    
+    async def step_1_generate_prediction(self, simulation: SimulationRun, request: SimulationRequest):
+        """Step 1: Generate synthetic prediction based on failure mode or load from database"""
         step = simulation.steps[0]
         step.status = "processing"
-        step.started_at = datetime.now().isoformat()
+        step.started_at = datetime.now(timezone.utc).isoformat()
         simulation.current_step = 1
         
         await self._update_and_broadcast(simulation, step, "Generating AI prediction...")
         await asyncio.sleep(1.5)  # Simulate processing
         
-        # Get failure mode template
-        template = FAILURE_MODE_TEMPLATES.get(failure_mode, FAILURE_MODE_TEMPLATES["bearing_wear"])
+        # Try to load from demo predictions first
+        demo_pred = None
         
-        # Generate prediction
-        prediction = {
-            "id": f"PRED-SIM-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-            "equipment_id": simulation.equipment_id,
-            "equipment_code": f"EQ-{simulation.equipment_id.upper()}",
-            "equipment_name": f"Solar Pump {simulation.equipment_id}",
-            "predicted_failure": template["name"],
-            "confidence_score": template["confidence_score"],
-            "health_score": template["health_score"],
-            "time_to_failure_hours": template["time_to_failure_hours"],
-            "maintenance_urgency": template["maintenance_urgency"],
-            "severity": template["severity"],
-            "estimated_cost": template["estimated_cost"],
-            "sensor_data": template["sensor_data"],
-            "predicted_date": (datetime.now() + timedelta(hours=template["time_to_failure_hours"])).isoformat(),
-            "created_at": datetime.now().isoformat()
-        }
+        # Check if prediction_id provided
+        if request.prediction_id:
+            demo_pred = await self._load_demo_prediction(request.prediction_id)
+        
+        # If not found, try failure_mode as ID or lookup
+        if not demo_pred:
+            demo_pred = await self._load_demo_prediction(request.failure_mode)
+        
+        # If still not found, use fallback templates
+        if demo_pred:
+            # Use demo prediction data
+            prediction = {
+                "id": demo_pred.get("id", f"PRED-SIM-{datetime.now().strftime('%Y%m%d%H%M%S')}"),
+                "equipment_id": demo_pred.get("equipment_id", simulation.equipment_id),
+                "equipment_code": f"EQ-{demo_pred.get('equipment_id', simulation.equipment_id).upper()}",
+                "equipment_name": demo_pred.get("equipment_name", "Unknown Equipment"),
+                "predicted_failure": demo_pred.get("predicted_failure", demo_pred.get("failure_mode", "Unknown")),
+                "confidence_score": demo_pred.get("confidence_score", 85.0),
+                "health_score": demo_pred.get("health_score", 65),
+                "time_to_failure_hours": demo_pred.get("time_to_failure_hours", 72),
+                "maintenance_urgency": demo_pred.get("maintenance_urgency", "high"),
+                "severity": demo_pred.get("severity", "high"),
+                "estimated_cost": demo_pred.get("estimated_cost", 3000),
+                "sensor_data": demo_pred.get("sensor_data", {}),
+                "description": demo_pred.get("description", ""),
+                "predicted_date": (datetime.now(timezone.utc) + timedelta(hours=demo_pred.get("time_to_failure_hours", 72))).isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        else:
+            # Fallback to static templates
+            template = FAILURE_MODE_TEMPLATES.get(request.failure_mode, FAILURE_MODE_TEMPLATES["bearing_wear"])
+            
+            prediction = {
+                "id": f"PRED-SIM-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                "equipment_id": simulation.equipment_id,
+                "equipment_code": f"EQ-{simulation.equipment_id.upper()}",
+                "equipment_name": f"Equipment {simulation.equipment_id}",
+                "predicted_failure": template["name"],
+                "confidence_score": template["confidence_score"],
+                "health_score": template["health_score"],
+                "time_to_failure_hours": template["time_to_failure_hours"],
+                "maintenance_urgency": template["maintenance_urgency"],
+                "severity": template["severity"],
+                "estimated_cost": template["estimated_cost"],
+                "sensor_data": template["sensor_data"],
+                "description": template.get("description", ""),
+                "predicted_date": (datetime.now(timezone.utc) + timedelta(hours=template["time_to_failure_hours"])).isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
         
         simulation.prediction_data = prediction
         
         step.status = "complete"
-        step.completed_at = datetime.now().isoformat()
+        step.completed_at = datetime.now(timezone.utc).isoformat()
         step.result = {"prediction_id": prediction["id"]}
-        step.details = f"Predicted: {template['name']} with {template['confidence_score']}% confidence"
+        step.details = f"Predicted: {prediction['predicted_failure']} with {prediction['confidence_score']}% confidence"
         
-        await self._update_and_broadcast(simulation, step, f"✅ Prediction generated: {template['name']}")
+        await self._update_and_broadcast(simulation, step, f"✅ Prediction generated: {prediction['predicted_failure']}")
     
     async def step_2_run_analytics(self, simulation: SimulationRun):
         """Step 2: Run analytics engine"""
         step = simulation.steps[1]
         step.status = "processing"
-        step.started_at = datetime.now().isoformat()
+        step.started_at = datetime.now(timezone.utc).isoformat()
         simulation.current_step = 2
         
         await self._update_and_broadcast(simulation, step, "Running AI analytics engine...")
@@ -251,13 +307,13 @@ class SimulationEngine:
             "id": f"ANALYTICS-{simulation.prediction_data['id']}",
             "prediction_id": simulation.prediction_data['id'],
             "analytics_package": analytics_package.dict(),
-            "generated_at": datetime.now().isoformat()
+            "generated_at": datetime.now(timezone.utc).isoformat()
         }
         
         simulation.analytics_data = analytics_data
         
         step.status = "complete"
-        step.completed_at = datetime.now().isoformat()
+        step.completed_at = datetime.now(timezone.utc).isoformat()
         step.result = {"analytics_id": analytics_data["id"]}
         step.details = f"Impact: ${impact:,.0f}, Downtime: {downtime}h"
         
@@ -267,7 +323,7 @@ class SimulationEngine:
         """Step 3: Auto-generate dispatch report"""
         step = simulation.steps[2]
         step.status = "processing"
-        step.started_at = datetime.now().isoformat()
+        step.started_at = datetime.now(timezone.utc).isoformat()
         simulation.current_step = 3
         
         await self._update_and_broadcast(simulation, step, "Generating automated report...")
@@ -283,7 +339,7 @@ class SimulationEngine:
         simulation.report_data = report
         
         step.status = "complete"
-        step.completed_at = datetime.now().isoformat()
+        step.completed_at = datetime.now(timezone.utc).isoformat()
         step.result = {"report_id": report["report_id"]}
         step.details = f"Report generated: {len(report.get('parts_requirements', []))} parts identified"
         
@@ -293,7 +349,7 @@ class SimulationEngine:
         """Step 4: Check inventory and reserve parts"""
         step = simulation.steps[3]
         step.status = "processing"
-        step.started_at = datetime.now().isoformat()
+        step.started_at = datetime.now(timezone.utc).isoformat()
         simulation.current_step = 4
         
         await self._update_and_broadcast(simulation, step, "Checking inventory...")
@@ -330,7 +386,7 @@ class SimulationEngine:
         simulation.inventory_data = inventory_status
         
         step.status = "complete"
-        step.completed_at = datetime.now().isoformat()
+        step.completed_at = datetime.now(timezone.utc).isoformat()
         step.result = inventory_status
         step.details = f"{inventory_status['available_parts']}/{inventory_status['total_parts_needed']} parts available"
         
@@ -340,7 +396,7 @@ class SimulationEngine:
         """Step 5: Auto-assign technician and create work order"""
         step = simulation.steps[4]
         step.status = "processing"
-        step.started_at = datetime.now().isoformat()
+        step.started_at = datetime.now(timezone.utc).isoformat()
         simulation.current_step = 5
         
         await self._update_and_broadcast(simulation, step, "Assigning technician...")
@@ -396,7 +452,7 @@ class SimulationEngine:
             "priority": simulation.prediction_data.get("maintenance_urgency", "medium"),
             "estimated_hours": simulation.analytics_data["analytics_package"]["resource_requirements"]["estimated_hours"],
             "status": "assigned",
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
         
         simulation.dispatch_data = {
@@ -407,7 +463,7 @@ class SimulationEngine:
         }
         
         step.status = "complete"
-        step.completed_at = datetime.now().isoformat()
+        step.completed_at = datetime.now(timezone.utc).isoformat()
         step.result = {"work_order_id": work_order["id"]}
         step.details = f"Assigned to {assigned_tech['first_name']} {assigned_tech['last_name']} ({assigned_tech['experience_years']}y exp)"
         
@@ -417,7 +473,7 @@ class SimulationEngine:
         """Step 6: Send notifications to stakeholders"""
         step = simulation.steps[5]
         step.status = "processing"
-        step.started_at = datetime.now().isoformat()
+        step.started_at = datetime.now(timezone.utc).isoformat()
         simulation.current_step = 6
         
         await self._update_and_broadcast(simulation, step, "Sending notifications...")
@@ -430,13 +486,13 @@ class SimulationEngine:
             "operations_notified": True,
             "notification_channels": ["email", "sms", "app_push"],
             "total_notifications_sent": 5,
-            "sent_at": datetime.now().isoformat()
+            "sent_at": datetime.now(timezone.utc).isoformat()
         }
         
         simulation.notifications_data = notifications
         
         step.status = "complete"
-        step.completed_at = datetime.now().isoformat()
+        step.completed_at = datetime.now(timezone.utc).isoformat()
         step.result = notifications
         step.details = f"{notifications['total_notifications_sent']} notifications sent via {len(notifications['notification_channels'])} channels"
         
