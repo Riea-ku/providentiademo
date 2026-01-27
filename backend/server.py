@@ -53,6 +53,12 @@ logger = logging.getLogger(__name__)
 ws_manager = WebSocketManager()
 simulation_engine = SimulationEngine(db, ws_manager)
 
+# Initialize Historical Intelligence Services
+report_storage = ReportStorageService(db, EMERGENT_LLM_KEY)
+event_orchestrator = GlobalEventOrchestrator(db, report_storage)
+historical_chatbot = HistoricalAwareChatbot(db, EMERGENT_LLM_KEY, report_storage, event_orchestrator)
+pattern_recognizer = HistoricalPatternRecognizer(db)
+
 
 # ============================================================================
 # MODELS
