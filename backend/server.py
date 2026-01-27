@@ -775,8 +775,46 @@ app.include_router(api_router)
 # HISTORICAL INTELLIGENCE ENDPOINTS ⭐ NEW
 # ============================================================================
 
-@api_router.post("/historical/chatbot/message")
-async def historical_chatbot_message(request: ChatMessageRequest):
+@api_router.get("/historical/status")
+async def historical_status():
+    """Check status of historical intelligence system"""
+    try:
+        # Test PostgreSQL connection
+        async with db_manager.get_postgres_pool().acquire() as conn:
+            table_count = await conn.fetchval("""
+                SELECT COUNT(*) FROM information_schema.tables 
+                WHERE table_schema = 'public'
+            """)
+            
+            report_count = await conn.fetchval("SELECT COUNT(*) FROM reports")
+            event_count = await conn.fetchval("SELECT COUNT(*) FROM system_events")
+        
+        return {
+            "success": True,
+            "status": "operational",
+            "database": "PostgreSQL with pgvector",
+            "tables": table_count,
+            "reports_count": report_count,
+            "events_count": event_count,
+            "features": [
+                "Semantic Search",
+                "Historical Context",
+                "Event Tracking",
+                "Pattern Recognition"
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Status check failed: {e}")
+        return {
+            "success": False,
+            "status": "error",
+            "error": str(e)
+        }
+
+
+# DISABLED TEMPORARILY - Will be re-enabled in Phase 3
+# @api_router.post("/historical/chatbot/message")
+# async def historical_chatbot_message(request: ChatMessageRequest):
     """
     Enhanced chatbot with complete historical awareness
     Can reference past reports, events, and patterns
