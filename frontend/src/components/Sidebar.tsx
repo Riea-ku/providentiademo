@@ -33,6 +33,7 @@ const mainNavItems: NavItem[] = [
   { title: 'Predictions', icon: <Activity className="h-5 w-5" />, href: '/predictions' },
   { title: 'AI Analytics', icon: <Brain className="h-5 w-5" />, href: '/analytics-enhanced' },
   { title: 'AI Simulation', icon: <Brain className="h-5 w-5" />, href: '/ai-analytics-simulation' },
+  { title: 'AI Creation', icon: <Sparkles className="h-5 w-5" />, href: '/ai-creation' },
   { title: 'History', icon: <History className="h-5 w-5" />, href: '/history' },
   { title: 'Equipment', icon: <Tractor className="h-5 w-5" />, href: '/equipment' },
   { title: 'Farms', icon: <Building2 className="h-5 w-5" />, href: '/farms' },

@@ -16,6 +16,7 @@ import AIAnalyticsSimulation from "./pages/AIAnalyticsSimulation";
 import HistoricalIntelligence from "./pages/HistoricalIntelligence";
 import History from "./pages/History";
 import ReportHistory from "./pages/ReportHistory";
+import AICreationDemo from "./pages/AICreationDemo";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/historical-intelligence" element={<HistoricalIntelligence />} />
           <Route path="/history" element={<History />} />
           <Route path="/report-history" element={<ReportHistory />} />
+          <Route path="/ai-creation" element={<AICreationDemo />} />
           <Route path="/reports" element={<Reports />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
