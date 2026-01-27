@@ -115,8 +115,8 @@ class AIEntityCreationService:
             if conv['current_question_index'] < len(questions):
                 return self._get_next_question(session_id)
             
-            # All questions answered - create entity
-            return self._complete_creation(session_id)
+            # All questions answered - complete creation synchronously
+            return self._complete_creation_sync(session_id)
             
         except Exception as e:
             logger.error(f"Failed to process answer: {e}")
