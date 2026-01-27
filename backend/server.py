@@ -1174,6 +1174,9 @@ async def startup_event():
         # Initialize AI Entity Creation Service - MUST BE GLOBAL
         ai_creation_service = AIEntityCreationService(mongo_db)
         
+        # Seed demo predictions for AI Analytics Simulation
+        await seed_demo_predictions()
+        
         logger.info("✅ All services initialized successfully!")
         logger.info("📊 MongoDB: Connected")
         logger.info("🐘 PostgreSQL: Connected with pgvector")
@@ -1183,7 +1186,7 @@ async def startup_event():
         logger.info("💬 Historical Chatbot: Ready")
         logger.info("📊 Pattern Recognizer: Ready")
         logger.info("📄 Intelligent Report Generator: Ready")
-        logger.info("🔬 Simulation Engine: Ready")
+        logger.info("🔬 Simulation Engine: Ready (20 demo cases loaded)")
         logger.info("🤖 AI Entity Creation: Ready")
         
     except Exception as e:
