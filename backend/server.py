@@ -19,6 +19,12 @@ from report_generator import TechnicianDispatchReport, ReportDispatcher
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from simulation_engine import SimulationEngine, SimulationRequest, SimulationRun, WebSocketManager
 
+# Import historical intelligence modules
+from report_storage_service import ReportStorageService
+from event_orchestrator import GlobalEventOrchestrator
+from historical_chatbot import HistoricalAwareChatbot
+from pattern_recognizer import HistoricalPatternRecognizer
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
