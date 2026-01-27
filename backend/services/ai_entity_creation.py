@@ -197,6 +197,58 @@ class AIEntityCreationService:
         # Simplified for now
         return []
     
+    def _complete_creation_sync(self, session_id: str) -> Dict:
+        """Complete entity creation synchronously (DB write is queued)"""
+        try:
+            conv = self.active_conversations[session_id]
+            entity_type = conv['entity_type']
+            collected_data = conv['collected_data']
+            
+            # Add metadata
+            entity_data = {
+                'id': str(uuid4()),
+                **collected_data,
+                'created_at': datetime.now(timezone.utc).isoformat(),
+                'created_by': 'ai_assistant',
+                'status': 'active'
+            }
+            
+            # Queue the database write asynchronously
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(self._save_entity(entity_type, entity_data))
+                else:
+                    loop.run_until_complete(self._save_entity(entity_type, entity_data))
+            except RuntimeError:
+                # If no event loop, create one
+                asyncio.run(self._save_entity(entity_type, entity_data))
+            
+            # Clean up conversation
+            del self.active_conversations[session_id]
+            
+            return {
+                'completed': True,
+                'entity_type': entity_type,
+                'entity_id': entity_data['id'],
+                'message': f"{entity_type[:-1].title()} created successfully!",
+                'data': entity_data
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to complete creation: {e}")
+            return {'error': str(e)}
+    
+    async def _save_entity(self, entity_type: str, entity_data: Dict):
+        """Save entity to database"""
+        try:
+            collection_name = entity_type
+            await self.mongo_db[collection_name].insert_one(entity_data.copy())
+            logger.info(f"✅ Created {entity_type}: {entity_data['id']}")
+        except Exception as e:
+            logger.error(f"Failed to save entity to DB: {e}")
+    
     async def _complete_creation(self, session_id: str) -> Dict:
         """Complete entity creation and save to database"""
         try:
