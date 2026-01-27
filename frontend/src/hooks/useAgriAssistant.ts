@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { ChatMessage } from '@/types/enterprise';
 import { toast } from 'sonner';
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agri-assistant`;
+const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 // Format tool results into human-readable format
 function formatToolResults(toolCalls: any[], toolResults: any[]): string {
@@ -281,153 +281,37 @@ export function useAgriAssistant() {
     abortControllerRef.current = new AbortController();
 
     try {
-      const response = await fetch(CHAT_URL, {
+      // Use Historical Chatbot endpoint instead of Supabase
+      const response = await fetch(`${API_URL}/api/chatbot/historical`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map(m => ({
-            role: m.role,
-            content: m.content,
-          })),
+          message: userInput.trim(),
           session_id: sessionId,
+          context: null,
         }),
         signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) {
-        if (response.status === 429) {
-          toast.error('Rate limit exceeded. Please wait a moment and try again.');
-          throw new Error('Rate limit exceeded');
-        }
-        if (response.status === 402) {
-          toast.error('AI credits exhausted. Please add funds to continue.');
-          throw new Error('Credits exhausted');
-        }
         throw new Error(`Request failed: ${response.status}`);
       }
 
-      if (!response.body) {
-        throw new Error('No response body');
-      }
+      const data = await response.json();
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let assistantContent = '';
-      let toolCalls: any[] = [];
-
-      const assistantId = crypto.randomUUID();
-      setMessages(prev => [
-        ...prev,
-        {
-          id: assistantId,
+      if (data.success && data.content) {
+        const assistantMessage: ChatMessage = {
+          id: crypto.randomUUID(),
           role: 'assistant',
-          content: '',
+          content: data.content,
           timestamp: new Date(),
-        },
-      ]);
-
-      let textBuffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        textBuffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
-
-          if (line.endsWith('\r')) line = line.slice(0, -1);
-          if (line.startsWith(':') || line.trim() === '') continue;
-          if (!line.startsWith('data: ')) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === '[DONE]') break;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const delta = parsed.choices?.[0]?.delta;
-
-            if (delta?.content) {
-              assistantContent += delta.content;
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === assistantId ? { ...m, content: assistantContent } : m
-                )
-              );
-            }
-
-            if (delta?.tool_calls) {
-              for (const tc of delta.tool_calls) {
-                if (tc.index !== undefined) {
-                  if (!toolCalls[tc.index]) {
-                    toolCalls[tc.index] = {
-                      id: tc.id || '',
-                      type: 'function',
-                      function: { name: '', arguments: '' },
-                    };
-                  }
-                  if (tc.id) toolCalls[tc.index].id = tc.id;
-                  if (tc.function?.name) {
-                    toolCalls[tc.index].function.name = tc.function.name;
-                  }
-                  if (tc.function?.arguments) {
-                    toolCalls[tc.index].function.arguments += tc.function.arguments;
-                  }
-                }
-              }
-            }
-          } catch {
-            textBuffer = line + '\n' + textBuffer;
-            break;
-          }
-        }
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      } else {
+        throw new Error('Invalid response format');
       }
-
-      // If there were tool calls, execute them and format nicely
-      if (toolCalls.length > 0) {
-        const toolResponse = await fetch(CHAT_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            execute_tools: toolCalls,
-          }),
-        });
-
-        if (toolResponse.ok) {
-          const toolResults = await toolResponse.json();
-          
-          // Format tool results into human-readable text
-          const formattedResults = formatToolResults(toolCalls, toolResults.tool_results || []);
-
-          if (formattedResults) {
-            assistantContent += `\n\n${formattedResults}`;
-            setMessages(prev =>
-              prev.map(m =>
-                m.id === assistantId
-                  ? { ...m, content: assistantContent, tool_calls: toolCalls }
-                  : m
-              )
-            );
-          }
-        }
-      }
-
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === assistantId
-            ? { ...m, content: assistantContent || 'I processed your request.', tool_calls: toolCalls.length > 0 ? toolCalls : undefined }
-            : m
-        )
-      );
 
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
