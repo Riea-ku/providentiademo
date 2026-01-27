@@ -14,7 +14,7 @@ const Analytics = lazy(() => import("./pages/Analytics"));
 const EnhancedAnalytics = lazy(() => import("./pages/EnhancedAnalytics"));
 import AIAnalyticsSimulation from "./pages/AIAnalyticsSimulation";
 import HistoricalIntelligence from "./pages/HistoricalIntelligence";
-import HistoricalIntelligenceDemo from "./pages/HistoricalIntelligenceDemo";
+import History from "./pages/History";
 import ReportHistory from "./pages/ReportHistory";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
@@ -38,7 +38,7 @@ const App = () => (
           <Route path="/analytics-enhanced" element={<Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}><EnhancedAnalytics /></Suspense>} />
           <Route path="/ai-analytics-simulation" element={<AIAnalyticsSimulation />} />
           <Route path="/historical-intelligence" element={<HistoricalIntelligence />} />
-          <Route path="/historical-demo" element={<HistoricalIntelligenceDemo />} />
+          <Route path="/history" element={<History />} />
           <Route path="/report-history" element={<ReportHistory />} />
           <Route path="/reports" element={<Reports />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
