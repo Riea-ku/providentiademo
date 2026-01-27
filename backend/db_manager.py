@@ -78,13 +78,13 @@ class DatabaseManager:
     
     def get_mongodb(self):
         """Get MongoDB database instance"""
-        if not self.mongo_db:
+        if self.mongo_db is None:
             raise RuntimeError("MongoDB not connected. Call connect_mongodb() first.")
         return self.mongo_db
     
     def get_postgres_pool(self):
         """Get PostgreSQL connection pool"""
-        if not self.postgres_pool:
+        if self.postgres_pool is None:
             raise RuntimeError("PostgreSQL not connected. Call connect_postgresql() first.")
         return self.postgres_pool
 
