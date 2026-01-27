@@ -1095,6 +1095,7 @@ async def startup_event():
         historical_chatbot_service = HistoricalAwareChatbot(
             postgres_pool, embedding_service, report_storage_service, EMERGENT_LLM_KEY
         )
+        historical_chatbot_service.set_mongo_db(mongo_db)
         pattern_recognizer_service = PatternRecognizerService(postgres_pool, mongo_db)
         intelligent_report_generator = IntelligentReportGenerator(
             postgres_pool, report_storage_service, pattern_recognizer_service, EMERGENT_LLM_KEY
