@@ -158,6 +158,13 @@ class ReportStorageService:
     
     async def get_report_by_id(self, report_id: str) -> Optional[Dict]:
         """Get a specific report by ID"""
+        # Check memory first
+        if report_id in self._memory_reports:
+            return self._memory_reports[report_id]
+        
+        if self.pg_pool is None:
+            return None
+        
         try:
             async with self.pg_pool.acquire() as conn:
                 row = await conn.fetchrow("""
@@ -202,6 +209,9 @@ class ReportStorageService:
         entity_id: str
     ) -> List[Dict]:
         """Get all reports related to a specific entity (equipment, prediction, etc.)"""
+        if self.pg_pool is None:
+            return []  # No history available without PostgreSQL
+        
         try:
             async with self.pg_pool.acquire() as conn:
                 rows = await conn.fetch("""
