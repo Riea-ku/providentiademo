@@ -669,6 +669,22 @@ async def list_simulations(limit: int = 20):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/ai-analytics/demo-cases")
+async def get_demo_prediction_cases():
+    """Get all 20 demo prediction cases for AI Analytics simulation"""
+    try:
+        cases = await db.demo_predictions.find({}, {"_id": 0}).to_list(100)
+        
+        return {
+            "success": True,
+            "count": len(cases),
+            "cases": cases
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============================================================================
 # WEBSOCKET ENDPOINT FOR REAL-TIME UPDATES
 # ============================================================================
