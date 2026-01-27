@@ -5,14 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   FileText, 
   Download, 
   Calendar,
-  Clock,
   MessageSquare,
   Send,
   Loader2,
@@ -21,19 +19,22 @@ import {
   Mail,
   Printer,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from 'lucide-react';
 
-interface Report {
+interface GeneratedReport {
   id: string;
-  report_number: string | null;
   title: string;
+  summary: string;
+  content: {
+    full_text: string;
+    report_type: string;
+    generated_at: string;
+  };
   report_type: string;
-  status: string | null;
-  summary: string | null;
-  created_at: string;
-  sections: unknown;
-  recommendations: string[] | null;
+  generated_by: string;
+  created_at?: string;
 }
 
 interface ChatMessage {
@@ -41,23 +42,28 @@ interface ChatMessage {
   content: string;
 }
 
-const STATUS_SYMBOLS = {
-  generated: '✅',
-  pending: '⏳',
-  sent: '📤',
-  error: '🔴'
-};
+const REPORT_TYPES = [
+  { value: 'maintenance_summary', label: 'Maintenance Summary' },
+  { value: 'equipment_analysis', label: 'Equipment Analysis' },
+  { value: 'cost_analysis', label: 'Cost Analysis' },
+  { value: 'prediction', label: 'Prediction Report' },
+  { value: 'technician_performance', label: 'Technician Performance' },
+  { value: 'weekly_summary', label: 'Weekly Summary' },
+  { value: 'monthly_summary', label: 'Monthly Summary' }
+];
 
 const Reports = () => {
-  const [reports, setReports] = useState<Report[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [reports, setReports] = useState<GeneratedReport[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<GeneratedReport | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const [generatingReport, setGeneratingReport] = useState(false);
-  const [reportType, setReportType] = useState('maintenance');
+  const [reportType, setReportType] = useState('maintenance_summary');
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8001';
 
   useEffect(() => {
     fetchReports();
@@ -70,13 +76,11 @@ const Reports = () => {
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('reports')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setReports(data || []);
+      const response = await fetch(`${backendUrl}/api/generated-reports`);
+      if (response.ok) {
+        const data = await response.json();
+        setReports(data.reports || []);
+      }
     } catch (error) {
       console.error('Error fetching reports:', error);
     } finally {
@@ -88,31 +92,50 @@ const Reports = () => {
     setGeneratingReport(true);
     setChatMessages(prev => [...prev, { 
       role: 'user', 
-      content: `Generate a ${reportType} report` 
+      content: `Generate a ${REPORT_TYPES.find(t => t.value === reportType)?.label || reportType} report` 
     }]);
     
     try {
-      const { data, error } = await supabase.functions.invoke('agri-assistant', {
-        body: {
-          messages: [
-            { role: 'user', content: `[GENERATE REPORT] Create a comprehensive ${reportType} report with executive summary, key findings, risk assessment, and recommendations. Format it professionally with clear sections.` }
-          ],
-          session_id: crypto.randomUUID()
-        }
+      const response = await fetch(`${backendUrl}/api/reports/generate-intelligent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          report_type: reportType,
+          current_data: {
+            equipment: 'All Equipment',
+            period: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+          },
+          parameters: {
+            period: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+          }
+        })
       });
       
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Report generation failed');
+      }
       
-      const responseText = typeof data === 'string' ? data : data?.response || 'Report generated successfully.';
-      setChatMessages(prev => [...prev, { role: 'assistant', content: responseText }]);
+      const data = await response.json();
       
-      // Refresh reports list
-      await fetchReports();
+      if (data.success && data.report) {
+        // Add new report to list
+        setReports(prev => [data.report, ...prev]);
+        setSelectedReport(data.report);
+        
+        const summary = data.report.summary || 'Report generated successfully!';
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `✅ Report generated successfully!\n\n**${data.report.title}**\n\n${summary.substring(0, 500)}${summary.length > 500 ? '...' : ''}\n\nClick on the report in the list to view the full content.`
+        }]);
+      } else {
+        throw new Error('No report returned');
+      }
+      
     } catch (error) {
       console.error('Report generation error:', error);
       setChatMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'I encountered an error generating the report. Please try again.' 
+        content: '❌ I encountered an error generating the report. Please try again.' 
       }]);
     } finally {
       setGeneratingReport(false);
@@ -128,20 +151,38 @@ const Reports = () => {
     setChatLoading(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('agri-assistant', {
-        body: {
-          messages: [
-            ...chatMessages.map(m => ({ role: m.role, content: m.content })),
-            { role: 'user', content: `[REPORTS CONTEXT] ${userMessage}` }
-          ],
-          session_id: crypto.randomUUID()
+      // Check if user wants to generate a report
+      const lowerMsg = userMessage.toLowerCase();
+      let matchedType = null;
+      
+      for (const type of REPORT_TYPES) {
+        if (lowerMsg.includes(type.label.toLowerCase()) || lowerMsg.includes(type.value.replace('_', ' '))) {
+          matchedType = type.value;
+          break;
         }
-      });
+      }
       
-      if (error) throw error;
+      if (lowerMsg.includes('generate') || lowerMsg.includes('create')) {
+        if (matchedType) {
+          setReportType(matchedType);
+          setChatMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: `I'll generate a ${REPORT_TYPES.find(t => t.value === matchedType)?.label} report for you now...`
+          }]);
+          setChatLoading(false);
+          
+          // Auto-trigger report generation
+          setTimeout(() => handleGenerateReport(), 500);
+          return;
+        }
+      }
       
-      const responseText = typeof data === 'string' ? data : data?.response || 'I can help you create and understand reports. What would you like to know?';
-      setChatMessages(prev => [...prev, { role: 'assistant', content: responseText }]);
+      // Default response
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `I can help you generate various reports. Available report types:\n\n${REPORT_TYPES.map(t => `• ${t.label}`).join('\n')}\n\nJust say "Generate a [report type]" or select from the dropdown and click Generate Report.`
+      }]);
+      
     } catch (error) {
       console.error('Chat error:', error);
       setChatMessages(prev => [...prev, { 
@@ -150,19 +191,6 @@ const Reports = () => {
       }]);
     } finally {
       setChatLoading(false);
-    }
-  };
-
-  const getStatusBadge = (status: string | null) => {
-    switch (status) {
-      case 'generated':
-        return <Badge variant="default">{STATUS_SYMBOLS.generated} Generated</Badge>;
-      case 'sent':
-        return <Badge variant="secondary">{STATUS_SYMBOLS.sent} Sent</Badge>;
-      case 'pending':
-        return <Badge variant="outline">{STATUS_SYMBOLS.pending} Pending</Badge>;
-      default:
-        return <Badge variant="outline">{STATUS_SYMBOLS.pending} {status || 'Unknown'}</Badge>;
     }
   };
 
@@ -216,13 +244,11 @@ const Reports = () => {
                           <SelectValue placeholder="Select report type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="maintenance">Maintenance Summary</SelectItem>
-                          <SelectItem value="equipment">Equipment Analysis</SelectItem>
-                          <SelectItem value="cost">Cost Analysis</SelectItem>
-                          <SelectItem value="prediction">Prediction Report</SelectItem>
-                          <SelectItem value="technician">Technician Performance</SelectItem>
-                          <SelectItem value="weekly">Weekly Summary</SelectItem>
-                          <SelectItem value="monthly">Monthly Summary</SelectItem>
+                          {REPORT_TYPES.map(type => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -230,7 +256,7 @@ const Reports = () => {
                       {generatingReport ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       ) : (
-                        <FileText className="w-4 h-4 mr-2" />
+                        <Sparkles className="w-4 h-4 mr-2" />
                       )}
                       Generate Report
                     </Button>
@@ -238,7 +264,7 @@ const Reports = () => {
                 </CardContent>
               </Card>
 
-              {/* Reports Table */}
+              {/* Recent Reports */}
               <Card>
                 <CardHeader>
                   <CardTitle>Recent Reports</CardTitle>
@@ -267,14 +293,17 @@ const Reports = () => {
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="font-mono text-xs text-muted-foreground">
-                                  {report.report_number || 'RPT-PENDING'}
+                                <Badge variant="default">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Generated
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {report.report_type?.replace(/_/g, ' ')}
                                 </span>
-                                {getStatusBadge(report.status)}
                               </div>
                               <h3 className="font-medium">{report.title}</h3>
                               <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                                {report.summary || 'No summary available'}
+                                {report.summary || 'Click to view full report'}
                               </p>
                             </div>
                             <div className="flex items-center gap-2 ml-4">
@@ -292,11 +321,11 @@ const Reports = () => {
                           <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              {formatDate(report.created_at)}
+                              {report.content?.generated_at ? formatDate(report.content.generated_at) : 'Just now'}
                             </span>
                             <span className="flex items-center gap-1">
-                              <FileText className="w-3 h-3" />
-                              {report.report_type}
+                              <Sparkles className="w-3 h-3" />
+                              AI Generated
                             </span>
                           </div>
                         </div>
@@ -311,7 +340,7 @@ const Reports = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      <span>Report Preview: {selectedReport.report_number}</span>
+                      <span>Report Preview</span>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm">
                           <Download className="w-4 h-4 mr-2" />
@@ -325,36 +354,13 @@ const Reports = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="prose prose-sm max-w-none dark:prose-invert">
-                      <h2>{selectedReport.title}</h2>
-                      
-                      {selectedReport.summary && (
-                        <div className="bg-muted p-4 rounded-lg mb-4">
-                          <h4 className="font-medium mb-2">Executive Summary</h4>
-                          <p>{selectedReport.summary}</p>
+                    <ScrollArea className="h-[500px]">
+                      <div className="prose prose-sm max-w-none dark:prose-invert">
+                        <div className="whitespace-pre-wrap text-sm">
+                          {selectedReport.content?.full_text || selectedReport.summary || 'No content available'}
                         </div>
-                      )}
-                      
-                      {selectedReport.recommendations && selectedReport.recommendations.length > 0 && (
-                        <div className="mt-4">
-                          <h4 className="font-medium mb-2">Recommendations</h4>
-                          <ul className="space-y-2">
-                            {selectedReport.recommendations.map((rec, idx) => (
-                              <li key={idx} className="flex items-start gap-2">
-                                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                                <span>{rec}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      
-                      <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
-                        <p>Report ID: {selectedReport.id}</p>
-                        <p>Generated: {formatDate(selectedReport.created_at)}</p>
-                        <p>Type: {selectedReport.report_type}</p>
                       </div>
-                    </div>
+                    </ScrollArea>
                   </CardContent>
                 </Card>
               )}
@@ -378,7 +384,7 @@ const Reports = () => {
                         variant="outline" 
                         size="sm" 
                         className="w-full text-left justify-start"
-                        onClick={() => setChatInput('Create a weekly maintenance summary')}
+                        onClick={() => setChatInput('Generate a maintenance summary report')}
                       >
                         {'▶️'} Create weekly maintenance summary
                       </Button>
@@ -394,7 +400,7 @@ const Reports = () => {
                         variant="outline" 
                         size="sm" 
                         className="w-full text-left justify-start"
-                        onClick={() => setChatInput('Explain what should be in a prediction report')}
+                        onClick={() => setChatInput('What types of reports can you generate?')}
                       >
                         {'▶️'} What's in a prediction report?
                       </Button>
@@ -402,7 +408,7 @@ const Reports = () => {
                         variant="outline" 
                         size="sm" 
                         className="w-full text-left justify-start"
-                        onClick={() => setChatInput('Schedule automated weekly reports')}
+                        onClick={() => setChatInput('Generate a monthly summary report')}
                       >
                         {'▶️'} Schedule automated reports
                       </Button>
