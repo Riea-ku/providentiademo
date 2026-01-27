@@ -19,13 +19,13 @@ from report_generator import TechnicianDispatchReport, ReportDispatcher
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from simulation_engine import SimulationEngine, SimulationRequest, SimulationRun, WebSocketManager
 
-# Import historical intelligence modules
-from report_storage_service import ReportStorageService
-from event_orchestrator import GlobalEventOrchestrator
-from historical_chatbot import HistoricalAwareChatbot
-from pattern_recognizer import HistoricalPatternRecognizer
-from enhanced_simulation import EnhancedSimulationEngine, PredictiveMaintenanceScheduler
-from report_export_service import ReportExporter, AutomatedReportScheduler
+# Import new database manager
+from db_manager import db_manager
+
+# Import new services
+from embedding_service import embedding_service
+from services.report_storage import ReportStorageService
+from services.event_orchestrator import EventOrchestratorService
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
