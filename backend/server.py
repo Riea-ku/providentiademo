@@ -932,6 +932,128 @@ async def get_historical_context(entity_type: str, entity_id: str):
 # @api_router.get("/reports/schedules")
 
 
+# ============================================================================
+# PHASE 3: HISTORICAL AI CHATBOT ⭐ NEW
+# ============================================================================
+
+class ChatRequest(BaseModel):
+    message: str
+    session_id: str
+    context: Optional[Dict[str, Any]] = None
+
+
+@api_router.post("/chatbot/historical")
+async def historical_chatbot_endpoint(request: ChatRequest):
+    """AI Chatbot with full historical awareness and citations"""
+    try:
+        response = await historical_chatbot_service.process_message_with_history(
+            message=request.message,
+            session_id=request.session_id,
+            user_context=request.context
+        )
+        
+        return {
+            "success": True,
+            **response
+        }
+        
+    except Exception as e:
+        logger.error(f"Chatbot error: {e}")
+        return {
+            "success": False,
+            "content": "I apologize, but I'm having trouble processing your request.",
+            "error": str(e)
+        }
+
+
+# ============================================================================
+# PHASE 4: INTELLIGENT REPORT GENERATION ⭐ NEW
+# ============================================================================
+
+class ReportGenerationRequest(BaseModel):
+    report_type: str
+    current_data: Dict[str, Any]
+    parameters: Optional[Dict[str, Any]] = None
+
+
+@api_router.post("/reports/generate-intelligent")
+async def generate_intelligent_report(request: ReportGenerationRequest):
+    """Generate report with full historical intelligence and comparison"""
+    try:
+        report_id = await intelligent_report_generator.generate_historical_report(
+            report_type=request.report_type,
+            current_data=request.current_data,
+            parameters=request.parameters
+        )
+        
+        # Get the generated report
+        report = await report_storage_service.get_report_by_id(report_id)
+        
+        return {
+            "success": True,
+            "report_id": report_id,
+            "report": report
+        }
+        
+    except Exception as e:
+        logger.error(f"Report generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# PHASE 5: PATTERN RECOGNITION ⭐ NEW
+# ============================================================================
+
+@api_router.get("/patterns/analyze")
+async def analyze_patterns(time_period: str = '365d'):
+    """Analyze patterns across all historical data"""
+    try:
+        patterns = await pattern_recognizer_service.analyze_system_patterns(time_period)
+        
+        return {
+            "success": True,
+            **patterns
+        }
+        
+    except Exception as e:
+        logger.error(f"Pattern analysis error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/patterns/equipment/{equipment_id}")
+async def get_equipment_patterns(equipment_id: str):
+    """Get historical patterns for specific equipment"""
+    try:
+        patterns = await pattern_recognizer_service.get_patterns_for_equipment(equipment_id)
+        
+        return {
+            "success": True,
+            **patterns
+        }
+        
+    except Exception as e:
+        logger.error(f"Equipment patterns error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/patterns/insights")
+async def get_pattern_insights():
+    """Get AI-generated insights from patterns"""
+    try:
+        # Analyze recent patterns
+        patterns = await pattern_recognizer_service.analyze_system_patterns('90d')
+        
+        return {
+            "success": True,
+            "insights": patterns.get('insights', []),
+            "patterns": patterns
+        }
+        
+    except Exception as e:
+        logger.error(f"Pattern insights error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
