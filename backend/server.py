@@ -38,6 +38,10 @@ db = client[os.environ['DB_NAME']]
 # Get Emergent LLM Key
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 
+# Global services (will be initialized on startup)
+report_storage_service = None
+event_orchestrator_service = None
+
 # Create the main app without a prefix
 app = FastAPI(title="Vida AI Predictive Analytics API", version="3.0.0")
 
