@@ -310,48 +310,49 @@ async def generate_report(analytics_id: str, request: Optional[ReportGenerationR
     """
     try:
         # Fetch analytics
-        analytics = await db.prediction_analytics.find_one({"id": analytics_id})
+        analytics = await db.prediction_analytics.find_one({"id": analytics_id}, {"_id": 0})
         if not analytics:
             raise HTTPException(status_code=404, detail="Analytics not found")
         
-        # Simulated prediction data
+        # Fetch actual prediction data
         prediction_id = analytics.get("prediction_id")
-        mock_prediction = {
-            "id": prediction_id,
-            "equipment_id": "eq-123",
-            "equipment": {
-                "id": "eq-123",
-                "name": "Solar Pump A",
-                "equipment_code": "SP-001",
-                "equipment_type": "solar_pump",
-                "location_gps": {"lat": 37.7749, "lng": -122.4194}
-            },
-            "confidence_score": 92,
-            "health_score": 68,
-            "time_to_failure_hours": 168,
-            "maintenance_urgency": "high",
-            "failure_types": [
-                {"type": "Bearing Wear", "severity": "critical"}
-            ]
-        }
+        prediction = await db.failure_predictions.find_one({"id": prediction_id}, {"_id": 0})
         
-        # Generate report
-        report_generator = TechnicianDispatchReport(
-            mock_prediction,
-            analytics.get("analytics_package", {})
+        if not prediction:
+            raise HTTPException(status_code=404, detail="Prediction data not found")
+        
+        # Generate report using intelligent report generator
+        report_id = await intelligent_report_generator.generate_historical_report(
+            report_type="technician_dispatch",
+            current_data={
+                "prediction_id": prediction_id,
+                "equipment_id": prediction.get("equipment_id"),
+                "equipment_type": prediction.get("equipment_type", "Unknown"),
+                "failure_type": prediction.get("predicted_failure_type"),
+                "severity": prediction.get("severity", "medium"),
+                "confidence_score": prediction.get("confidence_score", 0),
+                "health_score": prediction.get("health_score", 100),
+                "time_to_failure_hours": prediction.get("time_to_failure_hours", 0),
+                "description": f"Automated maintenance report for {prediction.get('equipment_type', 'equipment')}"
+            }
         )
-        report = report_generator.generate()
         
-        # Store report
+        # Get the generated report
+        report = await report_storage_service.get_report_by_id(report_id)
+        
+        if not report:
+            raise HTTPException(status_code=500, detail="Failed to retrieve generated report")
+        
+        # Store in automated_reports collection for backward compatibility
         report_doc = {
-            "id": report["report_id"],
+            "id": report_id,
             "analytics_id": analytics_id,
-            "report_type": report["report_type"],
+            "report_type": "technician_dispatch",
             "content": report,
             "generated_for": [],
             "dispatched_to": [],
             "status": "generated",
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
         
         await db.automated_reports.insert_one(report_doc)
@@ -364,7 +365,7 @@ async def generate_report(analytics_id: str, request: Optional[ReportGenerationR
         
         return {
             "success": True,
-            "report_id": report["report_id"],
+            "report_id": report_id,
             "report": report,
             "dispatch_ready": True
         }
