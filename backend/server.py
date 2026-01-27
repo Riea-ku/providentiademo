@@ -1164,6 +1164,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# ============================================================================
+# STARTUP & SHUTDOWN
+# ============================================================================
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize all database connections and services"""
+    global report_storage_service, event_orchestrator_service
+    
+    try:
+        logger.info("🚀 Starting application initialization...")
+        
+        # Initialize both databases
+        await db_manager.initialize()
+        
+        # Get database instances
+        postgres_pool = db_manager.get_postgres_pool()
+        
+        # Initialize services with both databases
+        report_storage_service = ReportStorageService(postgres_pool, embedding_service)
+        event_orchestrator_service = EventOrchestratorService(
+            postgres_pool, embedding_service, report_storage_service
+        )
+        
+        logger.info("✅ All services initialized successfully!")
+        logger.info("📊 MongoDB: Connected")
+        logger.info("🐘 PostgreSQL: Connected with pgvector")
+        logger.info("🧠 Embedding Service: Ready")
+        logger.info("📝 Report Storage: Ready")
+        logger.info("🎯 Event Orchestrator: Ready")
+        
+    except Exception as e:
+        logger.error(f"❌ Startup failed: {e}")
+        raise
+
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    """Close all database connections"""
+    logger.info("Shutting down...")
     client.close()
+    await db_manager.close()
+    logger.info("✅ All connections closed")
