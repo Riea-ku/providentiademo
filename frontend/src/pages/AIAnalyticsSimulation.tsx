@@ -4,6 +4,7 @@ import { Header } from '@/components/dashboard/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Brain,
   Loader2,
@@ -17,7 +18,10 @@ import {
   Package,
   Send,
   FileText,
-  Activity
+  Activity,
+  ChevronDown,
+  AlertTriangle,
+  Search
 } from 'lucide-react';
 
 interface SimulationStep {
@@ -44,37 +48,72 @@ interface SimulationData {
   notifications_data?: any;
 }
 
+interface DemoCase {
+  id: string;
+  failure_mode: string;
+  equipment_name: string;
+  predicted_failure: string;
+  severity: string;
+  confidence_score: number;
+  health_score: number;
+  time_to_failure_hours: number;
+  estimated_cost: number;
+  description: string;
+}
+
 const AIAnalyticsSimulation = () => {
-  const [selectedFailureMode, setSelectedFailureMode] = useState<string>('');
+  const [selectedCase, setSelectedCase] = useState<DemoCase | null>(null);
+  const [demoCases, setDemoCases] = useState<DemoCase[]>([]);
+  const [isLoadingCases, setIsLoadingCases] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationData, setSimulationData] = useState<SimulationData | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const wsRef = useRef<WebSocket | null>(null);
 
   const backend_url = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8001';
   const ws_url = backend_url.replace('http', 'ws').replace('https', 'wss');
 
-  const failureModes = [
-    { value: 'bearing_wear', label: '🔧 Bearing Wear', description: 'High vibration and temperature' },
-    { value: 'motor_overheat', label: '🔥 Motor Overheat', description: 'Cooling system failure' },
-    { value: 'pump_cavitation', label: '💧 Pump Cavitation', description: 'Low suction pressure' }
-  ];
+  // Load demo cases on mount
+  useEffect(() => {
+    loadDemoCases();
+  }, []);
 
-  const startSimulation = async (failureMode: string) => {
-    if (!failureMode) return;
+  const loadDemoCases = async () => {
+    setIsLoadingCases(true);
+    try {
+      const response = await fetch(`${backend_url}/api/ai-analytics/demo-cases`);
+      const data = await response.json();
+      
+      if (data.success && data.cases) {
+        setDemoCases(data.cases);
+      }
+    } catch (error) {
+      console.error('Failed to load demo cases:', error);
+    } finally {
+      setIsLoadingCases(false);
+    }
+  };
 
+  const filteredCases = demoCases.filter(c => 
+    c.equipment_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.predicted_failure.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const startSimulation = async (demoCase: DemoCase) => {
     setIsSimulating(true);
     setSimulationData(null);
-    setSelectedFailureMode(failureMode);
+    setSelectedCase(demoCase);
 
     try {
-      // Start simulation
       const response = await fetch(`${backend_url}/api/ai-analytics/simulate-failure`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          failure_mode: failureMode,
-          equipment_id: 'pump-001',
+          failure_mode: demoCase.failure_mode,
+          equipment_id: demoCase.id,
+          prediction_id: demoCase.id,
           run_full_cycle: true
         })
       });
@@ -86,10 +125,7 @@ const AIAnalyticsSimulation = () => {
       const data = await response.json();
       
       if (data.success) {
-        // Connect to WebSocket for live updates
         connectWebSocket(data.simulation_id);
-        
-        // Also poll for status updates as backup
         pollSimulationStatus(data.simulation_id);
       }
 
@@ -113,7 +149,6 @@ const AIAnalyticsSimulation = () => {
       console.log('WebSocket message:', message);
 
       if (message.type === 'step_update') {
-        // Update simulation data with new step info
         setSimulationData(prev => {
           if (!prev) return null;
           
@@ -149,7 +184,7 @@ const AIAnalyticsSimulation = () => {
   };
 
   const pollSimulationStatus = async (simulationId: string) => {
-    const maxAttempts = 60; // 60 seconds max
+    const maxAttempts = 60;
     let attempts = 0;
 
     const poll = async () => {
@@ -180,7 +215,6 @@ const AIAnalyticsSimulation = () => {
 
   useEffect(() => {
     return () => {
-      // Cleanup WebSocket on unmount
       if (wsRef.current) {
         wsRef.current.close();
       }
@@ -203,6 +237,24 @@ const AIAnalyticsSimulation = () => {
     }
   };
 
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'bg-red-500/10 text-red-600 border-red-500/30';
+      case 'high': return 'bg-orange-500/10 text-orange-600 border-orange-500/30';
+      case 'medium': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30';
+      default: return 'bg-green-500/10 text-green-600 border-green-500/30';
+    }
+  };
+
+  const getSeverityIcon = (severity: string) => {
+    switch (severity) {
+      case 'critical': return '🔴';
+      case 'high': return '🟠';
+      case 'medium': return '🟡';
+      default: return '🟢';
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
@@ -218,49 +270,102 @@ const AIAnalyticsSimulation = () => {
                 AI Analytics Simulation
               </h1>
               <p className="text-muted-foreground mt-1">
-                Interactive failure mode simulation with real-time progress tracking
+                20 Demo Cases • Select any prediction to run the complete AI pipeline
               </p>
             </div>
             <Badge variant="outline" className="text-sm">
               <Activity className="w-3 h-3 mr-1" />
-              {wsConnected ? '🟢 Live' : '⚪ Offline'}
+              {wsConnected ? '🟢 Live' : '⚪ Ready'}
             </Badge>
           </div>
 
-          {/* Failure Mode Selector */}
+          {/* Demo Cases Selector */}
           <Card className="border-2 border-primary/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-primary" />
-                Select Failure Mode to Simulate
+                Select a Prediction Case to Simulate
               </CardTitle>
               <CardDescription>
-                Choose a failure scenario to trigger the complete AI analytics pipeline
+                Choose from 20 realistic failure predictions across different equipment types
               </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-3 gap-4">
-                {failureModes.map((mode) => (
-                  <button
-                    key={mode.value}
-                    onClick={() => startSimulation(mode.value)}
-                    disabled={isSimulating}
-                    className={`p-4 rounded-lg border-2 text-left transition-all hover:shadow-lg ${
-                      selectedFailureMode === mode.value
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
-                    } ${isSimulating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                  >
-                    <div className="text-lg font-semibold mb-1">{mode.label}</div>
-                    <div className="text-sm text-muted-foreground">{mode.description}</div>
-                  </button>
-                ))}
+              
+              {/* Search */}
+              <div className="relative mt-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search by equipment, failure type, or description..."
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg bg-background"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
+            </CardHeader>
+            <CardContent>
+              {isLoadingCases ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                  Loading demo cases...
+                </div>
+              ) : (
+                <ScrollArea className="h-[400px] pr-4">
+                  <div className="grid gap-3">
+                    {filteredCases.map((demoCase) => (
+                      <button
+                        key={demoCase.id}
+                        onClick={() => startSimulation(demoCase)}
+                        disabled={isSimulating}
+                        className={`p-4 rounded-lg border-2 text-left transition-all hover:shadow-lg ${
+                          selectedCase?.id === demoCase.id
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/50'
+                        } ${isSimulating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-lg">{getSeverityIcon(demoCase.severity)}</span>
+                              <span className="font-semibold">{demoCase.equipment_name}</span>
+                              <Badge variant="outline" className={getSeverityColor(demoCase.severity)}>
+                                {demoCase.severity}
+                              </Badge>
+                            </div>
+                            <p className="text-sm font-medium text-primary mb-1">
+                              {demoCase.predicted_failure}
+                            </p>
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {demoCase.description}
+                            </p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-lg font-bold text-primary">
+                              {demoCase.confidence_score}%
+                            </div>
+                            <div className="text-xs text-muted-foreground">confidence</div>
+                            <div className="text-sm font-medium mt-1">
+                              ${demoCase.estimated_cost.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-muted-foreground">est. cost</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                          <span>Health: {demoCase.health_score}/100</span>
+                          <span>•</span>
+                          <span>TTF: {demoCase.time_to_failure_hours}h</span>
+                          <span>•</span>
+                          <span className="font-mono">{demoCase.id}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
 
-              {isSimulating && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {isSimulating && selectedCase && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-4 pt-4 border-t">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Simulation in progress...
+                  Running simulation for {selectedCase.equipment_name}...
                 </div>
               )}
             </CardContent>
@@ -312,7 +417,7 @@ const AIAnalyticsSimulation = () => {
                 </CardContent>
               </Card>
 
-              {/* Results Display (Only when complete) */}
+              {/* Results Display */}
               {simulationData.status === 'complete' && (
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* Prediction Results */}
@@ -489,9 +594,9 @@ const AIAnalyticsSimulation = () => {
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Brain className="w-16 h-16 text-muted-foreground/50 mb-4" />
-                <p className="text-lg font-semibold mb-2">No Simulation Running</p>
+                <p className="text-lg font-semibold mb-2">Ready to Simulate</p>
                 <p className="text-sm text-muted-foreground text-center max-w-md">
-                  Select a failure mode above to start the AI analytics simulation and see the complete pipeline in action
+                  Select any of the 20 prediction cases above to run the complete AI analytics pipeline and see real-time results
                 </p>
               </CardContent>
             </Card>
