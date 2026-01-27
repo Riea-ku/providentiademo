@@ -34,12 +34,17 @@ class PatternRecognizerService:
             async with self.pg_pool.acquire() as conn:
                 if start_date:
                     reports = await conn.fetch("""
-                        SELECT * FROM reports WHERE created_at >= $1
+                        SELECT id, title, report_type, created_at, tags, summary
+                        FROM reports WHERE created_at >= $1
                         ORDER BY created_at DESC
+                        LIMIT 1000
                     """, start_date)
                 else:
                     reports = await conn.fetch("""
-                        SELECT * FROM reports ORDER BY created_at DESC
+                        SELECT id, title, report_type, created_at, tags, summary
+                        FROM reports 
+                        ORDER BY created_at DESC
+                        LIMIT 1000
                     """)
             
             # Analyze patterns
