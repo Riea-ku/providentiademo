@@ -1006,8 +1006,17 @@ async def generate_intelligent_report(request: ReportGenerationRequest):
             parameters=request.parameters
         )
         
-        # Get the generated report
-        report = await report_storage_service.get_report_by_id(report_id)
+        # Get the generated report (try PostgreSQL storage first, then MongoDB)
+        report = None
+        if report_storage_service is not None:
+            report = await report_storage_service.get_report_by_id(report_id)
+        
+        if report is None:
+            # Try MongoDB fallback
+            mongo_db = db_manager.get_mongodb()
+            report_doc = await mongo_db.generated_reports.find_one({"_id": report_id}, {"_id": 0})
+            if report_doc:
+                report = report_doc
         
         return {
             "success": True,
