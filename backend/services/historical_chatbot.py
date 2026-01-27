@@ -18,6 +18,12 @@ class HistoricalAwareChatbot:
         self.embedding_service = embedding_service
         self.report_storage = report_storage_service
         self.llm_key = llm_key
+        # Will be set from server.py
+        self.mongo_db = None
+    
+    def set_mongo_db(self, mongo_db):
+        """Set MongoDB instance"""
+        self.mongo_db = mongo_db
     
     async def process_message_with_history(
         self,
@@ -70,21 +76,156 @@ class HistoricalAwareChatbot:
     ) -> Dict:
         """Retrieve all relevant historical data"""
         
+        # Analyze query to determine what data to fetch
+        query_lower = query.lower()
+        
+        # Initialize context
+        context = {
+            'relevant_reports': [],
+            'patterns': [],
+            'trends': [],
+            'real_time_data': {}
+        }
+        
+        # Get real-time data from MongoDB based on query
+        if self.mongo_db:
+            # Check for inventory queries
+            if any(word in query_lower for word in ['inventory', 'stock', 'parts', 'low', 'reorder']):
+                context['real_time_data']['inventory'] = await self._get_inventory_data()
+            
+            # Check for cost queries
+            if any(word in query_lower for word in ['cost', 'expense', 'budget', 'money', 'financial']):
+                context['real_time_data']['costs'] = await self._get_cost_data()
+            
+            # Check for equipment queries
+            if any(word in query_lower for word in ['equipment', 'machine', 'pump', 'motor', 'status']):
+                context['real_time_data']['equipment'] = await self._get_equipment_data()
+            
+            # Check for work order queries
+            if any(word in query_lower for word in ['work order', 'ticket', 'maintenance', 'repair']):
+                context['real_time_data']['work_orders'] = await self._get_work_orders()
+            
+            # Check for prediction queries
+            if any(word in query_lower for word in ['predict', 'forecast', 'failure', 'alert']):
+                context['real_time_data']['predictions'] = await self._get_predictions()
+        
         # Search reports semantically
         reports = await self.report_storage.retrieve_similar_reports(
             query=query,
             context=user_context,
             limit=5
         )
+        context['relevant_reports'] = reports
         
-        # Get conversation history for this session
-        # (simplified - would need session management)
-        
-        return {
-            'relevant_reports': reports,
-            'patterns': [],
-            'trends': []
-        }
+        return context
+    
+    async def _get_inventory_data(self) -> Dict:
+        """Get current inventory data"""
+        try:
+            # Get low stock items
+            inventory = await self.mongo_db.inventory.find({}, {"_id": 0}).to_list(100)
+            low_stock = [item for item in inventory if item.get('quantity_on_hand', 0) <= item.get('reorder_point', 0)]
+            
+            return {
+                'total_items': len(inventory),
+                'low_stock_count': len(low_stock),
+                'low_stock_items': low_stock[:10],
+                'summary': f"{len(low_stock)} items need reordering out of {len(inventory)} total"
+            }
+        except Exception as e:
+            logger.error(f"Failed to get inventory data: {e}")
+            return {}
+    
+    async def _get_cost_data(self) -> Dict:
+        """Get cost breakdown data"""
+        try:
+            # Get recent work orders with costs
+            from datetime import datetime, timedelta, timezone
+            thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+            
+            work_orders = await self.mongo_db.work_orders.find({
+                'created_at': {'$gte': thirty_days_ago.isoformat()}
+            }, {"_id": 0}).to_list(1000)
+            
+            # Calculate costs
+            total_cost = sum(float(wo.get('estimated_cost', 0)) for wo in work_orders)
+            by_priority = {}
+            for wo in work_orders:
+                priority = wo.get('priority', 'medium')
+                by_priority[priority] = by_priority.get(priority, 0) + float(wo.get('estimated_cost', 0))
+            
+            return {
+                'total_cost': total_cost,
+                'work_order_count': len(work_orders),
+                'cost_by_priority': by_priority,
+                'average_cost': total_cost / len(work_orders) if work_orders else 0,
+                'summary': f"Total ${total_cost:,.2f} across {len(work_orders)} work orders this month"
+            }
+        except Exception as e:
+            logger.error(f"Failed to get cost data: {e}")
+            return {}
+    
+    async def _get_equipment_data(self) -> Dict:
+        """Get equipment status data"""
+        try:
+            equipment = await self.mongo_db.equipment.find({}, {"_id": 0}).to_list(1000)
+            
+            by_status = {}
+            for eq in equipment:
+                status = eq.get('status', 'unknown')
+                by_status[status] = by_status.get(status, 0) + 1
+            
+            critical = [eq for eq in equipment if eq.get('status') == 'critical']
+            
+            return {
+                'total_equipment': len(equipment),
+                'by_status': by_status,
+                'critical_equipment': critical[:5],
+                'summary': f"{len(equipment)} total equipment: {by_status.get('operational', 0)} operational, {by_status.get('critical', 0)} critical"
+            }
+        except Exception as e:
+            logger.error(f"Failed to get equipment data: {e}")
+            return {}
+    
+    async def _get_work_orders(self) -> Dict:
+        """Get work orders data"""
+        try:
+            work_orders = await self.mongo_db.work_orders.find({}, {"_id": 0}).sort('created_at', -1).to_list(100)
+            
+            by_status = {}
+            for wo in work_orders:
+                status = wo.get('status', 'unknown')
+                by_status[status] = by_status.get(status, 0) + 1
+            
+            pending = [wo for wo in work_orders if wo.get('status') in ['pending', 'in_progress']]
+            
+            return {
+                'total': len(work_orders),
+                'by_status': by_status,
+                'pending_work_orders': pending[:10],
+                'summary': f"{len(work_orders)} total work orders: {by_status.get('pending', 0)} pending, {by_status.get('in_progress', 0)} in progress"
+            }
+        except Exception as e:
+            logger.error(f"Failed to get work orders: {e}")
+            return {}
+    
+    async def _get_predictions(self) -> Dict:
+        """Get predictions data"""
+        try:
+            predictions = await self.mongo_db.failure_predictions.find({}, {"_id": 0}).sort('created_at', -1).to_list(50)
+            
+            high_risk = [p for p in predictions if p.get('severity') in ['critical', 'high']]
+            
+            return {
+                'total_predictions': len(predictions),
+                'high_risk_count': len(high_risk),
+                'recent_predictions': predictions[:10],
+                'high_risk_predictions': high_risk[:5],
+                'summary': f"{len(predictions)} predictions, {len(high_risk)} high-risk failures identified"
+            }
+        except Exception as e:
+            logger.error(f"Failed to get predictions: {e}")
+            return {}
     
     def _analyze_intent(self, message: str) -> Dict:
         """Analyze user intent from message"""
@@ -169,15 +310,56 @@ Always provide helpful, accurate responses based on the historical data availabl
         """Build text representation of historical context"""
         context_parts = []
         
+        # Add real-time data first
+        real_time_data = historical_context.get('real_time_data', {})
+        
+        if real_time_data.get('inventory'):
+            inv = real_time_data['inventory']
+            context_parts.append(f"CURRENT INVENTORY STATUS:")
+            context_parts.append(f"- {inv.get('summary', 'No data')}")
+            if inv.get('low_stock_items'):
+                context_parts.append(f"  Low Stock Items:")
+                for item in inv['low_stock_items'][:5]:
+                    context_parts.append(f"    • {item.get('name', 'Unknown')}: {item.get('quantity_on_hand', 0)} units (reorder at {item.get('reorder_point', 0)})")
+        
+        if real_time_data.get('costs'):
+            costs = real_time_data['costs']
+            context_parts.append(f"\nCURRENT COST DATA:")
+            context_parts.append(f"- {costs.get('summary', 'No data')}")
+            if costs.get('cost_by_priority'):
+                context_parts.append(f"  Breakdown by Priority:")
+                for priority, amount in costs['cost_by_priority'].items():
+                    context_parts.append(f"    • {priority}: ${amount:,.2f}")
+        
+        if real_time_data.get('equipment'):
+            eq = real_time_data['equipment']
+            context_parts.append(f"\nCURRENT EQUIPMENT STATUS:")
+            context_parts.append(f"- {eq.get('summary', 'No data')}")
+            if eq.get('critical_equipment'):
+                context_parts.append(f"  Critical Equipment:")
+                for equipment in eq['critical_equipment']:
+                    context_parts.append(f"    • {equipment.get('name', 'Unknown')} ({equipment.get('equipment_code', 'N/A')})")
+        
+        if real_time_data.get('work_orders'):
+            wo = real_time_data['work_orders']
+            context_parts.append(f"\nCURRENT WORK ORDERS:")
+            context_parts.append(f"- {wo.get('summary', 'No data')}")
+        
+        if real_time_data.get('predictions'):
+            pred = real_time_data['predictions']
+            context_parts.append(f"\nRECENT PREDICTIONS:")
+            context_parts.append(f"- {pred.get('summary', 'No data')}")
+        
+        # Add historical reports
         reports = historical_context.get('relevant_reports', [])
         if reports:
-            context_parts.append("Relevant Historical Reports:")
+            context_parts.append("\nRELEVANT HISTORICAL REPORTS:")
             for i, report in enumerate(reports[:3], 1):
                 context_parts.append(
                     f"{i}. [{report['title']}] - {report['summary'][:100]}"
                 )
         
-        return "\n".join(context_parts) if context_parts else "No historical data available."
+        return "\n".join(context_parts) if context_parts else "No data available."
     
     def _extract_citations(self, response_text: str, reports: List[Dict]) -> List[Dict]:
         """Extract report citations from response text"""
