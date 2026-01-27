@@ -68,10 +68,10 @@ class ReportStorageService:
                         ai_metadata, embeddings_vector, summary_embedding,
                         tags, searchable_content, reference_entities,
                         created_at, updated_at
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::vector, $9::vector, $10, $11, $12, $13, $14)
                 """, 
                     report_id, title, summary, json.dumps(content), report_type, generated_by,
-                    json.dumps(ai_metadata), title_embedding, summary_embedding,
+                    json.dumps(ai_metadata), str(title_embedding), str(summary_embedding),
                     tags, searchable_content, json.dumps(reference_entities),
                     datetime.now(timezone.utc), datetime.now(timezone.utc)
                 )
