@@ -1,5 +1,6 @@
 """
 Database Manager - Manages connections to both MongoDB and PostgreSQL
+PostgreSQL is optional - app can work with MongoDB only
 """
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -17,6 +18,7 @@ class DatabaseManager:
         self.mongo_client: Optional[AsyncIOMotorClient] = None
         self.mongo_db = None
         self.postgres_pool: Optional[asyncpg.Pool] = None
+        self.postgres_available = False
         
     async def connect_mongodb(self):
         """Connect to MongoDB"""
@@ -36,7 +38,7 @@ class DatabaseManager:
             raise
     
     async def connect_postgresql(self):
-        """Connect to PostgreSQL with connection pooling"""
+        """Connect to PostgreSQL with connection pooling (optional)"""
         try:
             postgres_url = os.environ.get(
                 'POSTGRES_URL',
@@ -54,17 +56,24 @@ class DatabaseManager:
             async with self.postgres_pool.acquire() as conn:
                 await conn.fetchval('SELECT 1')
             
+            self.postgres_available = True
             logger.info("✅ Connected to PostgreSQL with connection pool")
             return self.postgres_pool
         except Exception as e:
-            logger.error(f"❌ PostgreSQL connection failed: {e}")
-            raise
+            logger.warning(f"⚠️ PostgreSQL connection failed (optional): {e}")
+            self.postgres_available = False
+            self.postgres_pool = None
+            return None
     
     async def initialize(self):
-        """Initialize both database connections"""
+        """Initialize database connections (PostgreSQL is optional)"""
         await self.connect_mongodb()
-        await self.connect_postgresql()
-        logger.info("✅ All database connections initialized")
+        await self.connect_postgresql()  # This won't raise if it fails
+        
+        if self.postgres_available:
+            logger.info("✅ All database connections initialized (MongoDB + PostgreSQL)")
+        else:
+            logger.info("✅ Database initialized (MongoDB only - PostgreSQL unavailable)")
     
     async def close(self):
         """Close all database connections"""
@@ -83,10 +92,12 @@ class DatabaseManager:
         return self.mongo_db
     
     def get_postgres_pool(self):
-        """Get PostgreSQL connection pool"""
-        if self.postgres_pool is None:
-            raise RuntimeError("PostgreSQL not connected. Call connect_postgresql() first.")
+        """Get PostgreSQL connection pool (may be None if unavailable)"""
         return self.postgres_pool
+    
+    def is_postgres_available(self):
+        """Check if PostgreSQL is available"""
+        return self.postgres_available
 
 
 # Global instance
