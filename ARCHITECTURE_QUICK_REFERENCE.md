@@ -165,7 +165,7 @@ DB_NAME=vida_ai_db
 EMERGENT_LLM_KEY=sk-emergent-...
 
 # Frontend (.env)
-VITE_BACKEND_URL=https://failure-sim-app.preview.emergentagent.com
+VITE_BACKEND_URL=https://agriassistant.preview.emergentagent.com
 VITE_SUPABASE_URL=https://placeholder.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=placeholder_key
 ```
@@ -229,13 +229,13 @@ curl -X POST http://localhost:8001/api/ai-analytics/simulate-failure \
 ## Access URLs
 
 🌐 **Live Application:**  
-https://failure-sim-app.preview.emergentagent.com
+https://agriassistant.preview.emergentagent.com
 
 📊 **AI Simulation Page:**  
-https://failure-sim-app.preview.emergentagent.com/ai-analytics-simulation
+https://agriassistant.preview.emergentagent.com/ai-analytics-simulation
 
 🔧 **API Health:**  
-https://failure-sim-app.preview.emergentagent.com/api/health
+https://agriassistant.preview.emergentagent.com/api/health
 
 ---
 

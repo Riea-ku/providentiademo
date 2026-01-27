@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 # Backend URL from environment
-BACKEND_URL = "https://failure-sim-app.preview.emergentagent.com/api"
+BACKEND_URL = "https://agriassistant.preview.emergentagent.com/api"
 
 class BackendTester:
     def __init__(self):
