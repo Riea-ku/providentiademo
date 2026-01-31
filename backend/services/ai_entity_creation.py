@@ -245,7 +245,7 @@ class AIEntityCreationService:
         try:
             collection_name = entity_type
             await self.mongo_db[collection_name].insert_one(entity_data.copy())
-            logger.info(f"✅ Created {entity_type}: {entity_data['id']}")
+            logger.info(f"Created {entity_type}: {entity_data['id']}")
         except Exception as e:
             logger.error(f"Failed to save entity to DB: {e}")
     
