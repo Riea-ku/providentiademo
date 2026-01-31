@@ -987,7 +987,7 @@ async def historical_chatbot_endpoint(request: ChatRequest):
 
 
 # ============================================================================
-# PHASE 4: INTELLIGENT REPORT GENERATION ⭐ NEW
+# PHASE 4: INTELLIGENT REPORT GENERATION NEW
 # ============================================================================
 
 class ReportGenerationRequest(BaseModel):
@@ -1053,7 +1053,7 @@ async def list_generated_reports(limit: int = 50):
 
 
 # ============================================================================
-# PHASE 5: PATTERN RECOGNITION ⭐ NEW
+# PHASE 5: PATTERN RECOGNITION NEW
 # ============================================================================
 
 @api_router.get("/patterns/analyze")
@@ -1107,7 +1107,7 @@ async def get_pattern_insights():
 
 
 # ============================================================================
-# AI ENTITY CREATION ENDPOINTS ⭐ NEW
+# AI ENTITY CREATION ENDPOINTS NEW
 # ============================================================================
 
 class AICreationStartRequest(BaseModel):
