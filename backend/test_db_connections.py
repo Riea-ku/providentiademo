@@ -11,14 +11,14 @@ from db_manager import db_manager
 
 
 async def test_connections():
-    print("🔍 Testing database connections...")
+    print("Testing database connections...")
     
     try:
         # Test MongoDB
         print("\n1️⃣ Testing MongoDB...")
         mongo_db = await db_manager.connect_mongodb()
         collections = await mongo_db.list_collection_names()
-        print(f"   ✅ MongoDB connected! Collections: {collections[:5]}")
+        print(f"    MongoDB connected! Collections: {collections[:5]}")
         
         # Test PostgreSQL
         print("\n2️⃣ Testing PostgreSQL...")
@@ -29,15 +29,15 @@ async def test_connections():
                 WHERE schemaname = 'public'
             """)
             table_names = [t['tablename'] for t in tables]
-            print(f"   ✅ PostgreSQL connected! Tables: {table_names}")
+            print(f"    PostgreSQL connected! Tables: {table_names}")
         
-        print("\n✅ All database connections successful!")
+        print("\n All database connections successful!")
         
         await db_manager.close()
         return True
         
     except Exception as e:
-        print(f"\n❌ Connection test failed: {e}")
+        print(f"\n Connection test failed: {e}")
         return False
 
 
