@@ -794,7 +794,7 @@ async def simulate_prediction():
 
 
 # ============================================================================
-# HISTORICAL INTELLIGENCE ENDPOINTS ⭐ NEW
+# HISTORICAL INTELLIGENCE ENDPOINTS  NEW
 # ============================================================================
 
 @api_router.get("/historical/status")
@@ -953,7 +953,7 @@ async def get_historical_context(entity_type: str, entity_id: str):
 
 
 # ============================================================================
-# PHASE 3: HISTORICAL AI CHATBOT ⭐ NEW
+# PHASE 3: HISTORICAL AI CHATBOT NEW
 # ============================================================================
 
 class ChatRequest(BaseModel):
@@ -1219,7 +1219,7 @@ async def seed_demo_predictions():
         # Check if predictions already exist
         existing_count = await db.demo_predictions.count_documents({})
         if existing_count >= 20:
-            logger.info(f"✅ Demo predictions already seeded ({existing_count} cases)")
+            logger.info(f"Demo predictions already seeded ({existing_count} cases)")
             return
         
         # Clear and reseed
@@ -1252,7 +1252,7 @@ async def seed_demo_predictions():
             demo_docs.append(doc)
         
         await db.demo_predictions.insert_many(demo_docs)
-        logger.info(f"✅ Seeded {len(demo_docs)} demo prediction cases")
+        logger.info(f"Seeded {len(demo_docs)} demo prediction cases")
         
     except Exception as e:
         logger.error(f"Failed to seed demo predictions: {e}")
@@ -1264,7 +1264,7 @@ async def startup_event():
     global report_storage_service, event_orchestrator_service, historical_chatbot_service, pattern_recognizer_service, intelligent_report_generator, simulation_engine, ai_creation_service
     
     try:
-        logger.info("🚀 Starting application initialization...")
+        logger.info("Starting application initialization...")
         
         # Initialize both databases (PostgreSQL is optional)
         await db_manager.initialize()
@@ -1300,7 +1300,7 @@ async def startup_event():
             intelligent_report_generator = IntelligentReportGenerator(
                 None, None, pattern_recognizer_service, EMERGENT_LLM_KEY, mongo_db
             )
-            logger.info("⚠️ PostgreSQL: Unavailable (some features limited)")
+            logger.info("PostgreSQL: Unavailable (some features limited)")
         
         # Initialize Simulation Engine with MongoDB for dynamic demo cases
         simulation_engine = SimulationEngine(db, ws_manager, mongo_db)
@@ -1311,19 +1311,19 @@ async def startup_event():
         # Seed demo predictions for AI Analytics Simulation
         await seed_demo_predictions()
         
-        logger.info("✅ All services initialized successfully!")
-        logger.info("📊 MongoDB: Connected")
-        logger.info("🧠 Embedding Service: Ready")
-        logger.info("📝 Report Storage: " + ("Ready" if report_storage_service else "Limited (no PostgreSQL)"))
-        logger.info("🎯 Event Orchestrator: " + ("Ready" if event_orchestrator_service else "Limited (no PostgreSQL)"))
-        logger.info("💬 Historical Chatbot: Ready")
-        logger.info("📊 Pattern Recognizer: Ready")
-        logger.info("📄 Intelligent Report Generator: Ready")
-        logger.info("🔬 Simulation Engine: Ready (20 demo cases loaded)")
-        logger.info("🤖 AI Entity Creation: Ready")
+        logger.info("All services initialized successfully!")
+        logger.info("MongoDB: Connected")
+        logger.info("Embedding Service: Ready")
+        logger.info("Report Storage: " + ("Ready" if report_storage_service else "Limited (no PostgreSQL)"))
+        logger.info("Event Orchestrator: " + ("Ready" if event_orchestrator_service else "Limited (no PostgreSQL)"))
+        logger.info("Historical Chatbot: Ready")
+        logger.info("Pattern Recognizer: Ready")
+        logger.info("Intelligent Report Generator: Ready")
+        logger.info("Simulation Engine: Ready (20 demo cases loaded)")
+        logger.info("AI Entity Creation: Ready")
         
     except Exception as e:
-        logger.error(f"❌ Startup failed: {e}")
+        logger.error(f"Startup failed: {e}")
         raise
 
 
@@ -1333,4 +1333,4 @@ async def shutdown_db_client():
     logger.info("Shutting down...")
     client.close()
     await db_manager.close()
-    logger.info("✅ All connections closed")
+    logger.info("All connections closed")
