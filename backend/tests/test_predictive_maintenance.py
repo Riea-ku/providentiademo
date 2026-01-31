@@ -21,7 +21,7 @@ class TestHealthAndBasics:
         assert data['status'] == 'healthy'
         assert data['database'] == 'connected'
         assert data['llm'] == 'available'
-        print(f"✅ Health check passed: {data}")
+        print(f"Health check passed: {data}")
     
     def test_root_endpoint(self):
         """Test root API endpoint"""
@@ -29,7 +29,7 @@ class TestHealthAndBasics:
         assert response.status_code == 200
         data = response.json()
         assert 'version' in data
-        print(f"✅ Root endpoint: {data['message']}")
+        print(f"Root endpoint: {data['message']}")
 
 
 class TestDemoCases:
@@ -53,7 +53,7 @@ class TestDemoCases:
         for field in required_fields:
             assert field in first_case, f"Missing field: {field}"
         
-        print(f"✅ Demo cases API returned {data['count']} cases")
+        print(f"Demo cases API returned {data['count']} cases")
         print(f"   First case: {first_case['equipment_name']} - {first_case['predicted_failure']}")
     
     def test_demo_cases_have_valid_severity_levels(self):
@@ -70,7 +70,7 @@ class TestDemoCases:
         for case in data['cases']:
             severity_counts[case['severity']] = severity_counts.get(case['severity'], 0) + 1
         
-        print(f"✅ Severity distribution: {severity_counts}")
+        print(f"Severity distribution: {severity_counts}")
 
 
 class TestAIAnalyticsSimulation:
@@ -94,7 +94,7 @@ class TestAIAnalyticsSimulation:
         assert 'simulation_id' in data
         assert data['status'] in ['running', 'complete']
         
-        print(f"✅ Simulation started: {data['simulation_id']}")
+        print(f"Simulation started: {data['simulation_id']}")
         return data['simulation_id']
     
     def test_simulation_completes_all_6_steps(self):
@@ -134,7 +134,7 @@ class TestAIAnalyticsSimulation:
                 assert sim_data['dispatch_data'] is not None
                 assert sim_data['notifications_data'] is not None
                 
-                print(f"✅ Simulation completed all 6 steps:")
+                print(f"Simulation completed all 6 steps:")
                 for step in sim_data['steps']:
                     print(f"   Step {step['step_number']}: {step['step_name']} - {step['details']}")
                 return
@@ -173,7 +173,7 @@ class TestAIAnalyticsSimulation:
         assert pred_data['equipment_name'] == demo_case['equipment_name']
         assert pred_data['predicted_failure'] == demo_case['predicted_failure']
         
-        print(f"✅ Simulation used correct demo case data:")
+        print(f"Simulation used correct demo case data:")
         print(f"   Equipment: {pred_data['equipment_name']}")
         print(f"   Failure: {pred_data['predicted_failure']}")
 
@@ -197,7 +197,7 @@ class TestAICreation:
         assert 'options' in data
         assert len(data['options']) > 0
         
-        print(f"✅ AI Creation started for farms:")
+        print(f"AI Creation started for farms:")
         print(f"   Session: {data['session_id']}")
         print(f"   Question: {data['question']}")
         print(f"   Options: {data['options']}")
@@ -215,7 +215,7 @@ class TestAICreation:
         assert 'session_id' in data
         assert 'question' in data
         
-        print(f"✅ AI Creation started for equipment:")
+        print(f"AI Creation started for equipment:")
         print(f"   Question: {data['question']}")
     
     def test_process_answer_in_creation_flow(self):
@@ -243,7 +243,7 @@ class TestAICreation:
         # Should either have next question or be completed
         assert 'question' in data or 'completed' in data
         
-        print(f"✅ AI Creation answer processed:")
+        print(f"AI Creation answer processed:")
         if 'question' in data:
             print(f"   Next question: {data['question']}")
         else:
@@ -266,7 +266,7 @@ class TestAICreation:
         assert data['success'] is True
         assert data['cancelled'] is True
         
-        print(f"✅ AI Creation session cancelled: {session_id}")
+        print(f"AI Creation session cancelled: {session_id}")
 
 
 class TestReportGeneration:
@@ -304,7 +304,7 @@ class TestReportGeneration:
         assert len(full_text) > 500, "Report should have substantial content"
         assert 'Maintenance' in full_text or 'maintenance' in full_text
         
-        print(f"✅ Maintenance Summary report generated:")
+        print(f"Maintenance Summary report generated:")
         print(f"   Report ID: {data['report_id']}")
         print(f"   Title: {report['title']}")
         print(f"   Content length: {len(full_text)} characters")
@@ -338,7 +338,7 @@ class TestReportGeneration:
         assert 'cost' in full_text.lower() or 'Cost' in full_text
         assert len(full_text) > 500
         
-        print(f"✅ Cost Analysis report generated:")
+        print(f"Cost Analysis report generated:")
         print(f"   Report ID: {data['report_id']}")
         print(f"   Title: {report['title']}")
     
@@ -373,7 +373,7 @@ class TestReportGeneration:
         assert 'reports' in data
         assert isinstance(data['reports'], list)
         
-        print(f"✅ Generated reports list:")
+        print(f"Generated reports list:")
         print(f"   Total reports: {data['count']}")
         if data['reports']:
             print(f"   Latest: {data['reports'][0].get('title', 'N/A')}")
@@ -392,7 +392,7 @@ class TestSimulationsList:
         assert 'count' in data
         assert 'simulations' in data
         
-        print(f"✅ Simulations list: {data['count']} simulations found")
+        print(f"Simulations list: {data['count']} simulations found")
 
 
 if __name__ == "__main__":
