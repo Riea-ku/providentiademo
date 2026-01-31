@@ -125,7 +125,7 @@ const Reports = () => {
         const summary = data.report.summary || 'Report generated successfully!';
         setChatMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: `✅ Report generated successfully!\n\n**${data.report.title}**\n\n${summary.substring(0, 500)}${summary.length > 500 ? '...' : ''}\n\nClick on the report in the list to view the full content.`
+          content: `Report generated successfully!\n\n**${data.report.title}**\n\n${summary.substring(0, 500)}${summary.length > 500 ? '...' : ''}\n\nClick on the report in the list to view the full content.`
         }]);
       } else {
         throw new Error('No report returned');
