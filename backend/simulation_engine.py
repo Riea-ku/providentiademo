@@ -283,7 +283,7 @@ class SimulationEngine:
         step.result = {"prediction_id": prediction["id"]}
         step.details = f"Predicted: {prediction['predicted_failure']} with {prediction['confidence_score']}% confidence"
         
-        await self._update_and_broadcast(simulation, step, f"✅ Prediction generated: {prediction['predicted_failure']}")
+        await self._update_and_broadcast(simulation, step, f"Prediction generated: {prediction['predicted_failure']}")
     
     async def step_2_run_analytics(self, simulation: SimulationRun):
         """Step 2: Run analytics engine"""
@@ -317,7 +317,7 @@ class SimulationEngine:
         step.result = {"analytics_id": analytics_data["id"]}
         step.details = f"Impact: ${impact:,.0f}, Downtime: {downtime}h"
         
-        await self._update_and_broadcast(simulation, step, "✅ Analytics complete - impact assessed")
+        await self._update_and_broadcast(simulation, step, "Analytics complete - impact assessed")
     
     async def step_3_generate_report(self, simulation: SimulationRun):
         """Step 3: Auto-generate dispatch report"""
@@ -390,7 +390,7 @@ class SimulationEngine:
         step.result = inventory_status
         step.details = f"{inventory_status['available_parts']}/{inventory_status['total_parts_needed']} parts available"
         
-        await self._update_and_broadcast(simulation, step, "✅ Inventory checked - parts reserved")
+        await self._update_and_broadcast(simulation, step, "Inventory checked - parts reserved")
     
     async def step_5_dispatch_technician(self, simulation: SimulationRun):
         """Step 5: Auto-assign technician and create work order"""
@@ -467,7 +467,7 @@ class SimulationEngine:
         step.result = {"work_order_id": work_order["id"]}
         step.details = f"Assigned to {assigned_tech['first_name']} {assigned_tech['last_name']} ({assigned_tech['experience_years']}y exp)"
         
-        await self._update_and_broadcast(simulation, step, f"✅ Technician assigned: {assigned_tech['first_name']} {assigned_tech['last_name']}")
+        await self._update_and_broadcast(simulation, step, f"Technician assigned: {assigned_tech['first_name']} {assigned_tech['last_name']}")
     
     async def step_6_send_notifications(self, simulation: SimulationRun):
         """Step 6: Send notifications to stakeholders"""
@@ -496,7 +496,7 @@ class SimulationEngine:
         step.result = notifications
         step.details = f"{notifications['total_notifications_sent']} notifications sent via {len(notifications['notification_channels'])} channels"
         
-        await self._update_and_broadcast(simulation, step, "✅ All stakeholders notified")
+        await self._update_and_broadcast(simulation, step, "All stakeholders notified")
     
     async def _update_and_broadcast(self, simulation: SimulationRun, step: SimulationStep, message: str):
         """Update database and broadcast to WebSocket clients"""
