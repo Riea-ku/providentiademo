@@ -38,16 +38,16 @@ class DatabaseManager:
             
             # Test connection
             await self.mongo_client.admin.command('ping')
-            logger.info(f"✅ Connected to MongoDB: {db_name}")
+            logger.info(f"Connected to MongoDB: {db_name}")
             return self.mongo_db
         except Exception as e:
-            logger.error(f"❌ MongoDB connection failed: {e}")
+            logger.error(f"MongoDB connection failed: {e}")
             raise
     
     async def connect_postgresql(self):
         """Connect to PostgreSQL with connection pooling (optional)"""
         if not ASYNCPG_AVAILABLE:
-            logger.info("⚠️ asyncpg not installed - PostgreSQL disabled")
+            logger.info("asyncpg not installed - PostgreSQL disabled")
             self.postgres_available = False
             self.postgres_pool = None
             return None
@@ -70,10 +70,10 @@ class DatabaseManager:
                 await conn.fetchval('SELECT 1')
             
             self.postgres_available = True
-            logger.info("✅ Connected to PostgreSQL with connection pool")
+            logger.info("Connected to PostgreSQL with connection pool")
             return self.postgres_pool
         except Exception as e:
-            logger.warning(f"⚠️ PostgreSQL connection failed (optional): {e}")
+            logger.warning(f"PostgreSQL connection failed (optional): {e}")
             self.postgres_available = False
             self.postgres_pool = None
             return None
@@ -84,9 +84,9 @@ class DatabaseManager:
         await self.connect_postgresql()  # This won't raise if it fails
         
         if self.postgres_available:
-            logger.info("✅ All database connections initialized (MongoDB + PostgreSQL)")
+            logger.info("All database connections initialized (MongoDB + PostgreSQL)")
         else:
-            logger.info("✅ Database initialized (MongoDB only - PostgreSQL unavailable)")
+            logger.info("Database initialized (MongoDB only - PostgreSQL unavailable)")
     
     async def close(self):
         """Close all database connections"""
