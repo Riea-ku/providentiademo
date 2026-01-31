@@ -82,11 +82,11 @@ class ReportStorageService:
                     datetime.now(timezone.utc), datetime.now(timezone.utc)
                 )
             
-            logger.info(f"✅ Stored report {report_id}: {title}")
+            logger.info(f"Stored report {report_id}: {title}")
             return report_id
             
         except Exception as e:
-            logger.error(f"❌ Failed to store report: {e}")
+            logger.error(f"Failed to store report: {e}")
             raise
     
     async def retrieve_similar_reports(
@@ -153,7 +153,7 @@ class ReportStorageService:
             return results
             
         except Exception as e:
-            logger.error(f"❌ Failed to retrieve similar reports: {e}")
+            logger.error(f"Failed to retrieve similar reports: {e}")
             return []
     
     async def get_report_by_id(self, report_id: str) -> Optional[Dict]:
@@ -200,7 +200,7 @@ class ReportStorageService:
             return report
             
         except Exception as e:
-            logger.error(f"❌ Failed to get report by ID: {e}")
+            logger.error(f"Failed to get report by ID: {e}")
             return None
     
     async def get_report_history_for_entity(
@@ -237,7 +237,7 @@ class ReportStorageService:
             return results
             
         except Exception as e:
-            logger.error(f"❌ Failed to get entity history: {e}")
+            logger.error(f"Failed to get entity history: {e}")
             return []
     
     async def _track_report_access(self, report_ids: List[str], query: str):
@@ -296,7 +296,7 @@ class ReportStorageService:
                 report_data.get('content', {})
             )
         }
-        logger.info(f"✅ Stored report in memory: {report_id}")
+        logger.info(f"Stored report in memory: {report_id}")
         return report_id
     
     async def _retrieve_from_memory(self, query: str, limit: int = 10) -> List[Dict]:
