@@ -148,7 +148,7 @@ const EnhancedAnalytics = () => {
               </Button>
               {demoData && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  ✅ Demo complete! Analytics generated for: {demoData.prediction.equipment_name}
+                   Demo complete! Analytics generated for: {demoData.prediction.equipment_name}
                 </p>
               )}
             </CardContent>
