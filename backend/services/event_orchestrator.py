@@ -64,11 +64,11 @@ class EventOrchestratorService:
                     searchable_text, tags
                 )
             
-            logger.info(f"✅ Logged event {event_id}: {event_type}")
+            logger.info(f"Logged event {event_id}: {event_type}")
             return event_id
             
         except Exception as e:
-            logger.error(f"❌ Failed to log event: {e}")
+            logger.error(f"Failed to log event: {e}")
             raise
     
     async def get_historical_context(
